@@ -15,7 +15,7 @@
 
         <div class="row">
             <div class="col-12">
-                <form action="{{ route('roles.update', $role->id) }}" method="POST">
+                <form action="{{ route('roles.assign.permission.store', $role->id) }}" method="POST">
                     @csrf
                     @method('PUT')
                     <div class="card">
@@ -42,14 +42,15 @@
                                 <div class="col-12 col-md-3">
                                      <div class="card">
                                     <div class="card-header">
-                                        <h5>Settings</h5>
+                                        <h5>Permissions</h5>
                                     </div>
                                     <div class="card-body">
                                     <div class="vertical-tab setting-tab">
                                     <ul class="nav nav-tabs app-tabs-primary" id="v-bg" role="tablist">
                                         @foreach ($permissions->groupBy(function($item) {
-                                            return explode('.', $item->name)[0]; // group by module prefix
+                                            return explode('.', $item->name)[0]; 
                                         }) as $key => $group)
+                                        
                                             <li class="nav-item" role="presentation">
                                                 <a class="nav-link {{ $loop->first ? 'active' : '' }}"
                                                    id="pills-{{ $key }}-tab"

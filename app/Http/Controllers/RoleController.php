@@ -67,22 +67,43 @@ public function update(Request $request, $id)
     return redirect()->back()->with('success', 'Role updated successfully.');
 }
 
- public function Store_Permission(Request $request, $id)
-    {
-        $request->validate( [
-            'name' => 'required',
-            'permission' => 'required',
-        ]);
+//  public function Store_Permission(Request $request, $id)
+//     {
+//         //dd($request->all());
+//         $request->validate( [
+//             'name' => 'required',
+//             'permissions' => 'required',
+//         ]);
     
-        $role = Role::find($id);
-        $role->name = $request->input('name');
-        $role->save();
+//         $role = Role::find($id);
+//         $role->name = $request->input('name');
+//         $role->save();
     
-        $role->syncPermissions($request->input('permission'));
+//         $role->syncPermissions($request->input('permissions'));
     
-        return redirect()->route('roles.index')
-                        ->with('success','Role updated successfully');
-    }
+//         return redirect()->route('admin.user_management.assign_permission')
+//                         ->with('success','Role updated successfully');
+//     }
+
+
+public function Store_Permission(Request $request, $id)
+{
+    $request->validate([
+        'name' => 'required',
+        'permissions' => 'required|array',
+    ]);
+
+    $role = Role::findOrFail($id);
+    $role->name = $request->input('name');
+    $role->save();
+
+    $permissionNames = Permission::whereIn('id', $request->input('permissions'))->pluck('name')->toArray();
+
+    $role->syncPermissions($permissionNames);
+
+    return redirect()->route('roles.assign.permission',$id)
+                     ->with('success', 'Role updated successfully');
+}
 public function delete($id)
 {
     $role = Role::findOrFail($id);
