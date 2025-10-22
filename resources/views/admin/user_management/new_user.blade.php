@@ -44,7 +44,7 @@
                                 <div class="col-md-4">
                                     <label for="role_id" class="form-label">Assign Role</label>
                                     <select class="form-select" id="role_id" name="role_id" required>
-                                        <option disabled value="">--Select Role--</option>
+                                        <option disabled value="" selected>--Select Role--</option>
                                         @foreach($roles as $role)
                                             <option value="{{ $role->id }}" {{ old('role_id', $user->role_id ?? '') == $role->id ? 'selected' : '' }}>
                                                 {{ $role->name }}
@@ -58,7 +58,7 @@
                                 <div class="col-md-6">
                                     <label for="district" class="form-label">District</label>
                                     <select class="form-select" id="district" name="district_id" required>
-                                        <option disabled value="">--Select District--</option>
+                                        <option disabled value="" selected>--Select District--</option>
                                         @foreach($districts as $district)
                                             <option value="{{ $district->id }}" {{ old('district_id', $user->district_id ?? '') == $district->id ? 'selected' : '' }}>
                                                 {{ $district->district_name }}
@@ -72,7 +72,7 @@
                                 <div class="col-md-6">
                                     <label for="Designation" class="form-label">Designation</label>
                                     <select class="form-select" id="Designation" name="designation" required>
-                                        <option disabled value="">--Select Designation--</option>
+                                        <option disabled value="" selected>--Select Designation--</option>
                                         @foreach($roles as $role)
                                             <option value="{{ $role->name }}" {{ old('designation', $user->designation ?? '') == $role->name ? 'selected' : '' }}>
                                                 {{ $role->name }}

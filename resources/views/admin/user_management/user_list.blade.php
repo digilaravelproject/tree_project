@@ -24,9 +24,10 @@
                     <div class="card">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <h4 class="mb-0">User List</h4>
-                            <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#createUserModal">
-                                Create User
-                            </button>
+                             @can('user_management.user.create')
+              <a class="btn btn-sm btn-primary" href="{{ route('create.user') }}">Create User</a>
+              @endcan
+                          
                         </div>
 
                         <div class="card-body p-0">

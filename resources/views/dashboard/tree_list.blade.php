@@ -4,26 +4,25 @@
 @endsection
 
 @section('content')
-
     <!-- Body main section starts -->
     <main>
         <div class="container-fluid">
             <!-- Breadcrumb start -->
             <div class="row m-1">
                 <div class="col-12 ">
-                    <h4 class="main-title mb-3">Boat Directory</h4>
+                    <h4 class="main-title mb-3">Tree List</h4>
                     <!-- <ul class="app-line-breadcrumbs mb-3">
-                        <li class="">
-                            <a href="#" class="f-s-14 f-w-500">
-                                <span>
-                                    <i class="ph-duotone  ph-table f-s-16"></i> Table
-                                </span>
-                            </a>
-                        </li>
-                        <li class="active">
-                            <a href="#" class="f-s-14 f-w-500">Data Table</a>
-                        </li>
-                    </ul> -->
+                            <li class="">
+                                <a href="#" class="f-s-14 f-w-500">
+                                    <span>
+                                        <i class="ph-duotone  ph-table f-s-16"></i> Table
+                                    </span>
+                                </a>
+                            </li>
+                            <li class="active">
+                                <a href="#" class="f-s-14 f-w-500">Data Table</a>
+                            </li>
+                        </ul> -->
                 </div>
             </div>
 
@@ -33,7 +32,7 @@
             <div class="row">
                 <!-- Default Datatable start -->
                 <div class="col-12">
-                    <div class="card ">                        
+                    <div class="card ">
                         <div class="card-body p-0">
                             <div class="app-datatable-default overflow-auto">
                                 <table id="example" class="display app-data-table default-data-table">
@@ -272,7 +271,8 @@
                                         </tr>
                                         <tr>
                                             <td>Haley Kennedy</td>
-                                            <td><span class="badge text-light-primary">Senior Marketing Designer</span></td>
+                                            <td><span class="badge text-light-primary">Senior Marketing Designer</span>
+                                            </td>
                                             <td>London</td>
                                             <td>43</td>
                                             <td>2012-12-18</td>

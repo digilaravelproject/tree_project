@@ -18,10 +18,7 @@
                 <form action="{{ route('roles.assign.permission.store', $role->id) }}" method="POST">
                     @csrf
                     @method('PUT')
-                    <div class="card">
-                        <div class="card-header">
-                            <h5>Edit Role: {{ $role->name }}</h5>
-                        </div>
+                    <div class="card">                       
                         <div class="card-body">
                             <div class="mb-3 row">
                                 <label for="name" class="col-md-4 col-form-label text-md-end text-start">Role Name</label>
@@ -62,15 +59,15 @@
                                         @endforeach
                                     </ul>
                                 </div>
-                                  </div>
-                                    </div>
-                                      </div>
+                            </div>
+                        </div>
+                    </div>
 
                                 <div class="col-12 col-md-9">
                                     <div class="tab-content" id="pills-tabContent">
                                         @foreach ($permissions->groupBy(function($item) {
                                             return explode('.', $item->name)[0];
-                                        }) as $key => $group)
+                                                  }) as $key => $group)
                                             <div class="tab-pane fade {{ $loop->first ? 'show active' : '' }}"
                                                  id="pane-{{ $key }}">
                                                 <h6>{{ ucwords(str_replace('_', ' ', $key)) }}</h6>
@@ -87,7 +84,8 @@
                                                                        {{ in_array($perm->id, $rolePermissions) ? 'checked' : '' }}>
                                                                 <label class="form-check-label"
                                                                        for="permission_{{ $perm->id }}">
-                                                                    {{ ucwords(str_replace('.', ' ', $perm->name)) }}
+                                                                       {{ ucwords(str_replace(['.', '_'], ' ', $perm->name)) }}
+                                                                    <!-- {{ ucwords(str_replace('.', ' ', $perm->name)) }} -->
                                                                 </label>
                                                             </div>
                                                         </div>

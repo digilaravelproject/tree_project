@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\StateMaster;
 
 class HomeController extends Controller
 {
@@ -12,106 +13,105 @@ class HomeController extends Controller
     }
 
 
-      public function Home()
+    public function home()
     {
         $page_title = 'Home';
 
-        return view('dashboard.home' ,compact('page_title'));
+        return view('dashboard.home', compact('page_title'));
     }
-      public function Profile()
+    public function Profile()
     {
         $page_title = 'Profile';
 
-        return view('dashboard.profile' ,compact('page_title'));
+        return view('dashboard.profile', compact('page_title'));
     }
 
-      public function district_dashboard()
+    public function district_dashboard()
     {
         $page_title = 'District Monitoring Dashoard';
 
-        return view('dashboard.district' ,compact('page_title'));
+        return view('dashboard.district', compact('page_title'));
     }
-      public function add_boat()
+    public function add_project()
     {
-        $page_title = 'Register New Boat';
+        $page_title = 'Register New Project';
+        $statemaster = StateMaster::all();
 
-        return view('dashboard.new_boat' ,compact('page_title'));
+        return view('dashboard.new_project', compact('page_title', 'statemaster'));
     }
 
 
-     public function boat_directory()
+    public function project_list()
     {
-        $page_title = 'Boat Directory';
+        $page_title = 'Project List';
 
-        return view('dashboard.boat_directory' ,compact('page_title'));
+        return view('dashboard.project_list', compact('page_title'));
     }
 
 
-      public function add_ghaat()
+    public function add_tree()
     {
-        $page_title = 'Register New Ghaat';
+        $page_title = 'Register New Tree';
 
-        return view('dashboard.new_ghaat' ,compact('page_title'));
+        return view('dashboard.new_tree', compact('page_title'));
     }
 
 
-     public function ghaat_directory()
+    public function tree_list()
     {
-        $page_title = 'Ghaat Directory';
+        $page_title = 'Tree List';
 
-        return view('dashboard.ghaat_directory' ,compact('page_title'));
+        return view('dashboard.tree_list', compact('page_title'));
     }
 
 
-       public function Record_Distribution()
+    public function tree_map()
     {
-        $page_title = 'Register New Boat';
+        $page_title = 'Tree Map';
 
-        return view('dashboard.record_distribution' ,compact('page_title'));
+        return view('dashboard.tree_map', compact('page_title'));
     }
 
 
-     public function Distribution_Tracking()
+    public function Distribution_Tracking()
     {
         $page_title = 'Distribution Tracking';
 
-        return view('dashboard.distribution_tracking' ,compact('page_title'));
+        return view('dashboard.distribution_tracking', compact('page_title'));
     }
 
 
 
 
-         public function Inspection()
+    public function report()
     {
-        $page_title = 'Conduct Inspection';
+        $page_title = 'Report';
 
-        return view('dashboard.create_inspection' ,compact('page_title'));
+        return view('dashboard.report', compact('page_title'));
     }
 
 
-     public function Records()
+    public function Records()
     {
         $page_title = 'Inspection Records
 ';
 
-        return view('dashboard.inspection_records' ,compact('page_title'));
+        return view('dashboard.inspection_records', compact('page_title'));
     }
 
 
-       public function Schedule()
+    public function Schedule()
     {
         $page_title = 'Inspection Schedule';
 
-        return view('dashboard.inspection_schedule' ,compact('page_title'));
+        return view('dashboard.inspection_schedule', compact('page_title'));
     }
 
 
-     public function Analytics()
+    public function Analytics()
     {
         $page_title = 'Inspection Analytics';
 
-        return view('dashboard.inspection_analytics' ,compact('page_title'));
+        return view('dashboard.inspection_analytics', compact('page_title'));
     }
-
-
 }

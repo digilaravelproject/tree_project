@@ -7,11 +7,13 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
-
+use Hash;
 class AuthController extends Controller
 {
     public function showLoginForm()
     {
+    //    dd(Hash::make('Test@1234')) ;
+
         return view('auth.login');
     }
 
@@ -39,6 +41,6 @@ class AuthController extends Controller
     public function logout()
     {
         Auth::logout();
-        return redirect('/login');
+        return redirect()->route('login');;
     }
 }

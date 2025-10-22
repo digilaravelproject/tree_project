@@ -12,7 +12,7 @@
     <meta name="author" content="la-themes">
     <link rel="icon" href="../assets/images/logo/favicon.png" type="image/x-icon">
     <link rel="shortcut icon" href="../assets/images/logo/favicon.png" type="image/x-icon">
-    <title>Rahat Boat | Login</title>
+    <title>Tree Expert | Login</title>
 
     <link rel="stylesheet" href="../assets/vendor/fontawesome/css/all.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -36,19 +36,20 @@
                             </div>
 
                             <div class="form_container">
-                               
+
 
                                 <form class="app-form" action="{{ route('login.store') }}" method="POST">
                                     @csrf
                                     <div class="mb-3 text-center">
                                         <h3>Login to your Account</h3>
-                                        <p class="f-s-12 text-secondary">Get started with our app, just login and enjoy.</p>
+                                        <p class="f-s-12 text-secondary">Get started with our app, just login and enjoy.
+                                        </p>
                                     </div>
-                                     @if ($errors->any())
-                                    <div class="alert alert-danger text-center">
-                                        {{ $errors->first() }}
-                                    </div>
-                                     @endif
+                                    @if ($errors->any())
+                                        <div class="alert alert-danger text-center">
+                                            {{ $errors->first() }}
+                                        </div>
+                                    @endif
 
                                     <div class="mb-3">
                                         <label class="form-label">Email address</label>
@@ -70,21 +71,23 @@
                                         <button type="submit" class="btn btn-primary w-100">Submit</button>
                                     </div>
 
-                                    <div class="app-divider-v justify-content-center">
+                                    {{-- <div class="app-divider-v justify-content-center">
                                         <p>OR</p>
-                                    </div>
+                                    </div> --}}
 
-                                    <div class="mb-3 text-center">
+                                    {{-- <div class="mb-3 text-center">
                                         <button type="button" class="btn btn-primary icon-btn b-r-5 m-1"><i
                                                 class="ti ti-brand-facebook text-white"></i></button>
                                         <button type="button" class="btn btn-danger icon-btn b-r-5 m-1"><i
                                                 class="ti ti-brand-google text-white"></i></button>
                                         <button type="button" class="btn btn-dark icon-btn b-r-5 m-1"><i
                                                 class="ti ti-brand-github text-white"></i></button>
-                                    </div>
+                                    </div> --}}
 
                                     <div class="text-center">
-                                        <a href="./terms_condition.html" class="text-secondary text-decoration-underline">Terms of use &amp; Conditions</a>
+                                        <a href="./terms_condition.html"
+                                            class="text-secondary text-decoration-underline">Terms of use &amp;
+                                            Conditions</a>
                                     </div>
                                 </form>
                             </div>
