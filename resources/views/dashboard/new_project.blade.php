@@ -20,7 +20,8 @@
                 <div class="col-12">
                     <div class="card">
                         <div class="card-body">
-                            <form class="row g-3 needs-validation" method="POST" action="" novalidate>
+                            <form class="row g-3 needs-validation" method="POST" action="{{ route('projects.store') }}"
+                                novalidate>
                                 @csrf
 
                                 <div class="col-md-6">
@@ -32,26 +33,23 @@
                                 </div>
 
                                 <div class="col-md-6">
-                                    <label for="state" class="form-label">State <span
-                                            class="text-danger">*</span></label>
+                                    <label for="state" class="form-label">
+                                        State <span class="text-danger">*</span>
+                                    </label>
                                     <select name="state" class="form-select" id="state" required>
                                         <option value="" disabled {{ old('state') ? '' : 'selected' }}>Select state
                                         </option>
-                                        <option value="Andhra Pradesh"
-                                            {{ old('state') == 'Andhra Pradesh' ? 'selected' : '' }}>Andhra Pradesh</option>
-                                        <option value="Delhi" {{ old('state') == 'Delhi' ? 'selected' : '' }}>Delhi
-                                        </option>
-                                        <option value="Haryana" {{ old('state') == 'Haryana' ? 'selected' : '' }}>Haryana
-                                        </option>
-                                        <option value="Maharashtra" {{ old('state') == 'Maharashtra' ? 'selected' : '' }}>
-                                            Maharashtra</option>
-                                        <option value="Tamil Nadu" {{ old('state') == 'Tamil Nadu' ? 'selected' : '' }}>
-                                            Tamil Nadu</option>
-                                        <option value="Uttar Pradesh"
-                                            {{ old('state') == 'Uttar Pradesh' ? 'selected' : '' }}>Uttar Pradesh</option>
+
+                                        @foreach ($statemaster as $state)
+                                            <option value="{{ $state->id }}"
+                                                {{ old('state') == $state->state_name ? 'selected' : '' }}>
+                                                {{ $state->state_name }}
+                                            </option>
+                                        @endforeach
                                     </select>
                                     <div class="invalid-feedback">Please select a state.</div>
                                 </div>
+
 
                                 <div class="col-md-6">
                                     <label for="clientName" class="form-label">Client Name <span
@@ -70,12 +68,19 @@
                                 </div>
 
                                 <div class="col-md-6">
-                                    <label for="fieldOfficerName" class="form-label">Field Officer Name <span
-                                            class="text-danger">*</span></label>
-                                    <input type="text" name="field_officer_name" class="form-control"
-                                        id="fieldOfficerName" placeholder="Enter field officer name"
-                                        value="{{ old('field_officer_name') }}" required>
-                                    <div class="invalid-feedback">Please enter field officer name.</div>
+                                    <label for="fieldOfficerName" class="form-label">
+                                        Field Officer Name <span class="text-danger">*</span>
+                                    </label>
+                                    <select name="field_officer_name" id="fieldOfficerName" class="form-select" required>
+                                        <option value="" disabled selected>Select field officer</option>
+                                        @foreach ($officers as $officer)
+                                            <option value="{{ $officer->id }}"
+                                                {{ old('field_officer_name') == $officer->name ? 'selected' : '' }}>
+                                                {{ $officer->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <div class="invalid-feedback">Please select a field officer.</div>
                                 </div>
 
                                 <div class="col-12 mt-3">

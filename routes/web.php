@@ -6,6 +6,11 @@ use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\RoleController;
 use Illuminate\Support\Facades\Hash;
+use App\Http\Controllers\FaqController;
+use App\Http\Controllers\VideoController;
+use App\Http\Controllers\ContactController;
+use App\Http\Controllers\NoteController;
+use App\Http\Controllers\PrivacyPolicyController;
 
 Route::get('/generate-hash', function () {
     $password = 'vedantgamechanger18';
@@ -49,6 +54,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/Profile', [HomeController::class, 'Profile'])->name('profile');
     Route::get('/add/project', [HomeController::class, 'add_project'])->name('add.project');
     Route::get('/project/list', [HomeController::class, 'project_list'])->name('project.list');
+    Route::post('projects/store', [HomeController::class, 'store'])->name('projects.store');
+    Route::get('project/edit/{id}', [HomeController::class, 'edit'])->name('projects.edit');
+    Route::post('project/update/{id}', [HomeController::class, 'update'])->name('projects.update');
+    Route::delete('project/delete/{id}', [HomeController::class, 'destroy'])->name('projects.delete');
 
     Route::get('/add/tree', [HomeController::class, 'add_tree'])->name('add.tree');
     Route::get('/List/tree', [HomeController::class, 'tree_list'])->name('tree.list');
@@ -59,4 +68,17 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/Inspection/Records', [HomeController::class, 'Records'])->name('Records');
     Route::get('/Inspection/Schedule', [HomeController::class, 'Schedule'])->name('Schedule');
     Route::get('/Inspection/Analytics', [HomeController::class, 'Analytics'])->name('Analytics');
+
+
+    Route::post('user-ratings/{id}/update', [HomeController::class, 'app_rate_update'])->name('user-ratings.update');
+    Route::get('/App/Rating', [HomeController::class, 'rate_app'])->name('rate.app');
+
+
+    Route::resource('faqs', FaqController::class);
+    Route::resource('videos', VideoController::class);
+    Route::resource('contacts', ContactController::class);
+    Route::resource('notes', NoteController::class);
+
+    Route::resource('privacy', PrivacyPolicyController::class);
+    Route::get('privacy/{privacy}/print', [PrivacyPolicyController::class, 'print'])->name('privacy.print');
 });

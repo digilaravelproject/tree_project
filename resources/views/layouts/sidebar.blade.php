@@ -108,6 +108,23 @@
                             </ul>
                         </li>
                     @endcan
+                    <li>
+                        <a class="" data-bs-toggle="collapse" href="#other" aria-expanded="false">
+                            <!-- <i class="ph-duotone  ph-house-line"></i> -->
+                            <i class="ph-duotone ph-boat"></i>
+                            Other
+                            <span class="badge text-bg-success badge-notification ms-2">6</span>
+                        </a>
+                        <ul class="collapse" id="other">
+                            <li><a href="{{ route('rate.app') }}">Rate App</a></li>
+                            <li><a href="{{ route('faqs.index') }}">FAQ</a></li>
+                            <li><a href="{{ route('videos.index') }}">Video Tutorial</a></li>
+                            <li><a href="{{ route('contacts.index') }}">Contact Us</a></li>
+                            <li><a href="{{ route('notes.index') }}">Note</a></li>
+                            <li><a href="{{ route('privacy.index') }}">Privacy Policy</a></li>
+
+                        </ul>
+                    </li>
                     <li class="no-sub">
                         <a class="" href="mailto:teqlathemes@gmail.com">
                             <i class="ph-duotone  ph-chats"></i> Support

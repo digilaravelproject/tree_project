@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\StateMaster;
+use App\Models\User;
+use App\Models\Project;
+use App\Models\UserRating;
 
 class HomeController extends Controller
 {
@@ -36,18 +39,72 @@ class HomeController extends Controller
     {
         $page_title = 'Register New Project';
         $statemaster = StateMaster::all();
+        $officers = User::Where('role_id', 2)->get();
 
-        return view('dashboard.new_project', compact('page_title', 'statemaster'));
+        return view('dashboard.new_project', compact('page_title', 'statemaster', 'officers'));
+    }
+
+    public function store(Request $request)
+    {
+        //print_r($request->all());
+        //die;
+        $request->validate([
+            'project_name' => 'required|string|max:255',
+            'state' => 'required|exists:state_master,id',
+            'client_name' => 'required|string|max:255',
+            'company_name' => 'required|string|max:255',
+            'field_officer_name' => 'required|exists:users,id',
+        ]);
+
+        Project::create([
+            'project_name' => $request->project_name,
+            'state_id' => $request->state,
+            'client_name' => $request->client_name,
+            'company_name' => $request->company_name,
+            'field_officer_id' => $request->field_officer_name,
+        ]);
+
+        return redirect()->route('project.list')->with('success', 'Project created successfully!');
     }
 
 
     public function project_list()
     {
         $page_title = 'Project List';
+        $projects = Project::with(['state', 'fieldOfficer'])->get();
 
-        return view('dashboard.project_list', compact('page_title'));
+        return view('dashboard.project_list', compact('page_title', 'projects'));
+    }
+    public function destroy($id)
+    {
+        $project = Project::findOrFail($id);
+        $project->delete();
+        return redirect()->route('project.list')->with('success', 'Project deleted successfully.');
     }
 
+    public function edit($id)
+    {
+        $project = Project::findOrFail($id);
+        $states = StateMaster::all();
+        $officers = User::where('role_id', 2)->get();
+        return view('dashboard.project_edit', compact('project', 'states', 'officers'));
+    }
+    public function update(Request $request, $id)
+    {
+        $project = Project::findOrFail($id);
+
+        $request->validate([
+            'project_name' => 'required|string|max:255',
+            'client_name' => 'nullable|string|max:255',
+            'state_id' => 'required|exists:state_master,id',
+            'company_name' => 'nullable|string|max:255',
+            'field_officer_id' => 'required|exists:users,id',
+        ]);
+
+        $project->update($request->all());
+
+        return redirect()->route('project.list')->with('success', 'Project updated successfully.');
+    }
 
     public function add_tree()
     {
@@ -108,10 +165,26 @@ class HomeController extends Controller
     }
 
 
-    public function Analytics()
+    public function rate_app()
     {
-        $page_title = 'Inspection Analytics';
+        $ratings = UserRating::with('user')->get();
+        $page_title = 'App Rating';
 
-        return view('dashboard.inspection_analytics', compact('page_title'));
+        return view('dashboard.app_rating', compact('page_title', 'ratings'));
+    }
+    public function app_rate_update(Request $request, $id)
+    {
+        $request->validate([
+            'rating' => 'required|numeric|min:1|max:5',
+            'comment' => 'nullable|string|max:500',
+        ]);
+
+        $rating = UserRating::findOrFail($id);
+        $rating->update([
+            'rating' => $request->rating,
+            'comment' => $request->comment,
+        ]);
+
+        return redirect()->back()->with('success', 'Rating updated successfully!');
     }
 }

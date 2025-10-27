@@ -1,0 +1,21 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Tree extends Model
+{
+    protected $table = 'trees';
+    protected $fillable = ['name'];
+
+    public function scientificName()
+    {
+        return $this->hasOne(ScientificName::class);
+    }
+
+    public function family()
+    {
+        return $this->hasOne(Family::class);
+    }
+}
