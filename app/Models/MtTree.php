@@ -43,4 +43,20 @@ class MtTree extends Model
     {
         return $this->belongsTo(Project::class, 'project_id');
     }
+    public function tree()
+    {
+        return $this->belongsTo(Tree::class, 'tree_name', 'id');
+    }
+
+    // Relation with scientific name
+    public function scientific()
+    {
+        return $this->belongsTo(ScientificName::class, 'scientific_name', 'id');
+    }
+
+    // Relation with family
+    public function familyRelation()
+    {
+        return $this->belongsTo(Family::class, 'family', 'id');
+    }
 }

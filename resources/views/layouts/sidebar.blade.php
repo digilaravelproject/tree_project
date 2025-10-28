@@ -73,45 +73,46 @@
                         </li>
                     @endcanany
 
+                    @can('tree_data')
+                        <li>
+                            <a class="" data-bs-toggle="collapse" href="#ghaats" aria-expanded="false">
+                                <i class="ph-duotone  ph ph-waves"></i>
+                                Tree Data
+                                <span class="badge text-bg-success badge-notification ms-2">1</span>
+                            </a>
+                            <ul class="collapse" id="ghaats">
+                                <li><a href="{{ route('tree.list') }}">Tree List</a></li>
+                            </ul>
+                        </li>
+                    @endcanany
 
-                    <li>
-                        <a class="" data-bs-toggle="collapse" href="#ghaats" aria-expanded="false">
-                            <i class="ph-duotone  ph ph-waves"></i>
-                            Tree Data
-                            <span class="badge text-bg-success badge-notification ms-2">2</span>
-                        </a>
-                        <ul class="collapse" id="ghaats">
-                            <li><a href="{{ route('add.tree') }}">Ragister New Tree </a></li>
-                            <li><a href="{{ route('tree.list') }}">Tree List</a></li>
-                        </ul>
-                    </li>
+                    @can('map')
+                        <li>
+                            <a class="" data-bs-toggle="collapse" href="#TreeMapMenu" aria-expanded="false">
+                                <i class="ph-duotone ph-shield"></i>
+                                Map
+                                <span class="badge text-bg-success badge-notification ms-2">1</span>
+                            </a>
+                            <ul class="collapse" id="TreeMapMenu">
+                                <li><a href="{{ route('tree.map') }}">Tree On Map</a></li>
+                            </ul>
+                        </li>
+                    @endcan
 
+                    @can('master')
+                        <li>
+                            <a class="" data-bs-toggle="collapse" href="#Inspection" aria-expanded="false">
+                                <i class="ph-duotone ph-magnifying-glass"></i>
+                                Master
+                                <span class="badge text-bg-success badge-notification ms-2">1</span>
+                            </a>
+                            <ul class="collapse" id="Inspection">
+                                <li><a href="{{ route('project.report') }}"> Project Report</a></li>
+                                <li><a href="{{ route('tree.report') }}"> Tree Report</a></li>
 
-                    <li>
-                        <a class="" data-bs-toggle="collapse" href="#Jacket" aria-expanded="false">
-                            <i class="ph-duotone ph-shield"></i>
-                            Map
-                            <span class="badge text-bg-success badge-notification ms-2">1</span>
-                        </a>
-                        <ul class="collapse" id="Jacket">
-                            <li><a href="{{ route('tree.map') }}">Tree On Map</a></li>
-                            {{-- <li><a href="{{ route('distribution.tracking') }}">Distribution Tracking</a></li> --}}
-                        </ul>
-                    </li>
-
-                    <li>
-                        <a class="" data-bs-toggle="collapse" href="#Inspection" aria-expanded="false">
-                            <i class="ph-duotone ph-magnifying-glass"></i>
-                            Master
-                            <span class="badge text-bg-success badge-notification ms-2">1</span>
-                        </a>
-                        <ul class="collapse" id="Inspection">
-                            <li><a href="{{ route('report') }}">Report</a></li>
-                            {{-- <li><a href="{{ route('Records') }}">Inspection Records</a></li>
-                            <li><a href="{{ route('Schedule') }}">Inspection schedule</a></li>
-                            <li><a href="{{ route('Analytics') }}">Analytics</a></li> --}}
-                        </ul>
-                    </li>
+                            </ul>
+                        </li>
+                    @endcan
                     @can('user_management')
                         <li>
                             <a class="" data-bs-toggle="collapse" href="#User" aria-expanded="false">

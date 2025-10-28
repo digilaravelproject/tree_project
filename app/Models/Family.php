@@ -13,4 +13,8 @@ class Family extends Model
     {
         return $this->belongsTo(Tree::class);
     }
+    public function mtTrees()
+    {
+        return $this->hasMany(MtTree::class, 'family', 'id');
+    }
 }

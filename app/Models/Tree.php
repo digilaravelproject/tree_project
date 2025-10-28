@@ -18,4 +18,8 @@ class Tree extends Model
     {
         return $this->hasOne(Family::class);
     }
+    public function mtTrees()
+    {
+        return $this->hasMany(MtTree::class, 'tree_name', 'id');
+    }
 }

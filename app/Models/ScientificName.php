@@ -13,4 +13,8 @@ class ScientificName extends Model
     {
         return $this->belongsTo(Tree::class);
     }
+    public function mtTrees()
+    {
+        return $this->hasMany(MtTree::class, 'scientific_name', 'id');
+    }
 }

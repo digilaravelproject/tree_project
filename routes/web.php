@@ -82,22 +82,31 @@ Route::middleware(['auth'])->group(function () {
     // Route::post('project/update/{id}', [HomeController::class, 'update'])->name('projects.update');
     // Route::delete('project/delete/{id}', [HomeController::class, 'destroy'])->name('projects.delete');
 
-    Route::get('/add/tree', [HomeController::class, 'add_tree'])->name('add.tree');
-    Route::get('/edit/tree/{id}', [HomeController::class, 'add_tree'])->name('trees.edit');
+    // Route::get('/add/tree', [HomeController::class, 'add_tree'])->name('add.tree');
+    Route::middleware(['can:tree_data'])->group(function () {
+        Route::get('/List/tree', [HomeController::class, 'tree_list'])->name('tree.list');
+        Route::get('/edit/tree/{id}', [HomeController::class, 'edit_tree'])->name('trees.edit');
+        Route::put('/trees/update/{tree_id}', [HomeController::class, 'update_tree'])->name('trees.update');
+    });
     // Route::get('/edit/tree/{id}', [HomeController::class, 'add_tree'])->name('tree.update');
 
-    Route::get('/List/tree', [HomeController::class, 'tree_list'])->name('tree.list');
-    Route::get('/tree/map', [HomeController::class, 'tree_map'])->name('tree.map');
-    Route::get('/Distribution/Tracking', [HomeController::class, 'Distribution_Tracking'])->name('distribution.tracking');
 
-    Route::get('/report', [HomeController::class, 'report'])->name('report');
+    Route::middleware(['can:map'])->group(function () {
+        Route::get('/tree/map', [HomeController::class, 'tree_map'])->name('tree.map');
+    });
+    Route::get('/Distribution/Tracking', [HomeController::class, 'Distribution_Tracking'])->name('distribution.tracking');
+    Route::middleware(['can:master'])->group(function () {
+        Route::get('/project/report', [HomeController::class, 'project_report'])->name('project.report');
+        Route::get('/project-report', [HomeController::class, 'project_report'])->name('project.report');
+        Route::get('/tree/report', [HomeController::class, 'tree_report'])->name('tree.report');
+    });
     // Route::get('/Inspection/Records', [HomeController::class, 'Records'])->name('Records');
     // Route::get('/Inspection/Schedule', [HomeController::class, 'Schedule'])->name('Schedule');
     // Route::get('/Inspection/Analytics', [HomeController::class, 'Analytics'])->name('Analytics');
 
 
-    Route::post('user-ratings/{id}/update', [HomeController::class, 'app_rate_update'])->name('user-ratings.update');
-    Route::get('/App/Rating', [HomeController::class, 'rate_app'])->name('rate.app');
+    // Route::post('user-ratings/{id}/update', [HomeController::class, 'app_rate_update'])->name('user-ratings.update');
+    // Route::get('/App/Rating', [HomeController::class, 'rate_app'])->name('rate.app');
 
     Route::middleware(['can:other'])->group(function () {
         Route::post('user-ratings/{id}/update', [HomeController::class, 'app_rate_update'])->name('user-ratings.update');

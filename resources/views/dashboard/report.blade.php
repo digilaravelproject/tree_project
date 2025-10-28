@@ -4,102 +4,104 @@
 @endsection
 
 @section('content')
-    <!-- Body main section starts -->
     <main>
         <div class="container-fluid">
+            <!-- Notifications -->
+            @push('scripts')
+                <script>
+                    $(document).ready(function() {
+                        @if (session('success'))
+                            toastr.success("{{ session('success') }}");
+                        @endif
+                        @if (session('error'))
+                            toastr.error("{{ session('error') }}");
+                        @endif
+                        @if (session('warning'))
+                            toastr.warning("{{ session('warning') }}");
+                        @endif
+                        @if (session('info'))
+                            toastr.info("{{ session('info') }}");
+                        @endif
+                    });
+                </script>
+            @endpush
 
-            <!-- Breadcrumb start -->
+            <!-- Breadcrumb -->
             <div class="row m-1">
                 <div class="col-12 ">
-                    <h4 class="main-title mb-3">Report</h4>
-
+                    <h4 class="main-title mb-3">Project Report</h4>
                 </div>
             </div>
 
+            <!-- Filter Form -->
+            <div class="card mb-3 p-3">
+                <form method="GET" action="{{ route('project.report') }}" class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label for="from_date" class="form-label">From Date</label>
+                        <input type="date" name="from_date" id="from_date" value="{{ request('from_date') }}"
+                            class="form-control">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="to_date" class="form-label">To Date</label>
+                        <input type="date" name="to_date" id="to_date" value="{{ request('to_date') }}"
+                            class="form-control">
+                    </div>
+                    <div class="col-md-6 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary mt-3">Filter</button>
+                        <button type="submit" name="download_pdf" value="1" class="btn btn-danger mt-3">Download
+                            PDF</button>
+                        <a href="{{ route('project.report') }}" class="btn btn-secondary mt-3">Reset</a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Data Table -->
             <div class="row">
-
-                <!-- Custom Styles start -->
                 <div class="col-12">
-                    <div class="card">
-
-                        <div class="card-body">
-                            <form class="row g-3 needs-validation" novalidate>
-                                <div class="col-md-4">
-                                    <label for="validationCustom01" class="form-label">First name</label>
-                                    <input type="text" class="form-control" id="validationCustom01" value="Mark"
-                                        required>
-                                    <div class="valid-feedback">
-
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <label for="validationCustom02" class="form-label">Last name</label>
-                                    <input type="text" class="form-control" id="validationCustom02" value="Otto"
-                                        required>
-                                    <div class="valid-feedback">
-
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <label for="validationCustomUsername" class="form-label">Username</label>
-                                    <div class="input-group has-validation">
-                                        <span class="input-group-text" id="inputGroupPrepend">@</span>
-                                        <input type="text" class="form-control" id="validationCustomUsername"
-                                            aria-describedby="inputGroupPrepend" required>
-                                        <div class="invalid-feedback">
-                                            Please choose a username.
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="validationCustom03" class="form-label">City</label>
-                                    <input type="text" class="form-control" id="validationCustom03" required>
-                                    <div class="invalid-feedback">
-                                        Please provide a valid city.
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <label for="validationCustom04" class="form-label">State</label>
-                                    <select class="form-select" id="validationCustom04" required>
-                                        <option selected disabled value="">Choose...</option>
-                                        <option>...</option>
-                                    </select>
-                                    <div class="invalid-feedback">
-                                        Please select a valid state.
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <label for="validationCustom05" class="form-label">Zip</label>
-                                    <input type="text" class="form-control" id="validationCustom05" required>
-                                    <div class="invalid-feedback">
-                                        Please provide a valid zip.
-                                    </div>
-                                </div>
-                                <div class="col-12">
-                                    <div class="form-check d-flex flex-wrap gap-1">
-                                        <input class="form-check-input mg-2" type="checkbox" value=""
-                                            id="invalidCheck" required>
-                                        <label class="form-check-label" for="invalidCheck">
-                                            Agree to terms and conditions
-                                        </label>
-                                        <div class="invalid-feedback">
-                                            You must agree before submitting.
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-12">
-                                    <button class="btn btn-primary" type="submit">Submit form</button>
-                                </div>
-                            </form>
+                    <div class="card ">
+                        <div class="card-body p-0">
+                            <div class="app-datatable-default overflow-auto">
+                                <table id="example" class="display app-data-table default-data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Project Name</th>
+                                            <th>Client Name</th>
+                                            <th>State</th>
+                                            <th>Company Name</th>
+                                            <th>Created</th>
+                                            <th>Officer Name</th>
+                                            {{-- <th>Action</th> --}}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @forelse ($projects as $project)
+                                            <tr>
+                                                <td>{{ $project->project_name }}</td>
+                                                <td>{{ $project->client_name ?? '-' }}</td>
+                                                <td>{{ $project->state->state_name ?? '-' }}</td>
+                                                <td>{{ $project->company_name ?? '-' }}</td>
+                                                <td>{{ $project->created_at->format('Y-m-d H:i:s') }}</td>
+                                                <td>{{ $project->fieldOfficer->name ?? '-' }}</td>
+                                                {{-- <td>
+                                                    <a href="{{ route('trees.edit', $project->id) }}"
+                                                        class="btn btn-success btn-sm d-inline-flex align-items-center gap-2">
+                                                        <i class="ti ti-edit"></i>
+                                                        <span>Edit Tree</span>
+                                                    </a>
+                                                </td> --}}
+                                            </tr>
+                                        @empty
+                                            <tr>
+                                                <td colspan="7" class="text-center text-muted">No projects found</td>
+                                            </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <!-- Custom Styles end -->
-
             </div>
-            <!-- Form Validation end -->
-
         </div>
     </main>
-    <!-- Body main section ends -->
 @endsection
