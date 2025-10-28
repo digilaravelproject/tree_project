@@ -35,7 +35,7 @@
                             </a>
                         </li>
                     @endcan --}}
-
+                    {{-- 
                     <li>
                         <a class="" data-bs-toggle="collapse" href="#dashboard" aria-expanded="false">
                             <!-- <i class="ph-duotone  ph-house-line"></i> -->
@@ -48,7 +48,31 @@
                             <li><a href="{{ route('project.list') }}">Project List</a></li>
                             <li><a href="{{ route('project.list') }}">Project Setting</a></li>
                         </ul>
-                    </li>
+                    </li> --}}
+                    @canany(['project', 'project.store', 'project.create', 'project.edit', 'project.view',
+                        'project.delete'])
+                        <li>
+                            <a class="" data-bs-toggle="collapse" href="#dashboard" aria-expanded="false">
+                                <i class="ph-duotone ph-boat"></i>
+                                Project
+                                <span class="badge text-bg-success badge-notification ms-2">3</span>
+                            </a>
+                            <ul class="collapse" id="dashboard">
+                                @can('project.store')
+                                    <li><a href="{{ route('add.project') }}">Add Project</a></li>
+                                @endcan
+
+                                @can('project.list')
+                                    <li><a href="{{ route('project.list') }}">Project List</a></li>
+                                @endcan
+
+                                @can('project.list')
+                                    <li><a href="{{ route('project.list') }}">Project Setting</a></li>
+                                @endcan
+                            </ul>
+                        </li>
+                    @endcanany
+
 
                     <li>
                         <a class="" data-bs-toggle="collapse" href="#ghaats" aria-expanded="false">
@@ -108,7 +132,7 @@
                             </ul>
                         </li>
                     @endcan
-                    <li>
+                    {{-- <li>
                         <a class="" data-bs-toggle="collapse" href="#other" aria-expanded="false">
                             <!-- <i class="ph-duotone  ph-house-line"></i> -->
                             <i class="ph-duotone ph-boat"></i>
@@ -124,7 +148,43 @@
                             <li><a href="{{ route('privacy.index') }}">Privacy Policy</a></li>
 
                         </ul>
-                    </li>
+                    </li> --}}
+                    @canany(['other', 'other.faqs', 'other.videos', 'other.contacts', 'other.notes', 'other.privacy'])
+                        <li>
+                            <a class="" data-bs-toggle="collapse" href="#other" aria-expanded="false">
+                                <i class="ph-duotone ph-boat"></i>
+                                Other
+                                <span class="badge text-bg-success badge-notification ms-2">6</span>
+                            </a>
+                            <ul class="collapse" id="other">
+                                @can('other')
+                                    <li><a href="{{ route('rate.app') }}">Rate App</a></li>
+                                @endcan
+
+                                @can('other.faqs')
+                                    <li><a href="{{ route('faqs.index') }}">FAQ</a></li>
+                                @endcan
+
+                                @can('other.videos')
+                                    <li><a href="{{ route('videos.index') }}">Video Tutorial</a></li>
+                                @endcan
+
+                                @can('other.contacts')
+                                    <li><a href="{{ route('contacts.index') }}">Contact Us</a></li>
+                                @endcan
+
+                                @can('other.notes')
+                                    <li><a href="{{ route('notes.index') }}">Note</a></li>
+                                @endcan
+
+                                @can('other.privacy')
+                                    <li><a href="{{ route('privacy.index') }}">Privacy Policy</a></li>
+                                @endcan
+                            </ul>
+                        </li>
+                    @endcanany
+
+
                     <li class="no-sub">
                         <a class="" href="mailto:teqlathemes@gmail.com">
                             <i class="ph-duotone  ph-chats"></i> Support

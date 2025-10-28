@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\LoginController;
 use App\Http\Controllers\Api\WorkController;
 use App\Http\Controllers\Api\TreeController;
+use App\Http\Controllers\Api\Auth\ForgotPasswordController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [LoginController::class, 'login']);
@@ -33,6 +34,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/trees-add', [TreeController::class, 'index']);           // List all trees
     Route::get('/tree-show/{id}', [TreeController::class, 'show']);       // Show one tree
     Route::post('/trees-add', [TreeController::class, 'store']);       // Create new tree
-    Route::put('/tree-measure/{id}', [TreeController::class, 'update']);  // Update existing tree
+    Route::post('/tree-measure/{id}', [TreeController::class, 'update']);
     Route::delete('/measure-delete/{id}', [TreeController::class, 'destroy']);
+
+    Route::post('password/send-otp', [ForgotPasswordController::class, 'sendResetOtp']);
+    Route::post('password/verify-otp', [ForgotPasswordController::class, 'verifyOtp']);
+    Route::post('password/reset', [ForgotPasswordController::class, 'resetPassword']);
 });

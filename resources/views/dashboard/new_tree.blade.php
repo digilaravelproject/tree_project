@@ -234,7 +234,7 @@
                     const lon = document.getElementById("longitude").value || "N/A";
                     const address = document.getElementById("address").value || "Unknown Address";
                     const dateTime = document.getElementById("datetime").value || new Date()
-                    .toLocaleString();
+                        .toLocaleString();
 
                     const img = new Image();
                     img.onload = function() {

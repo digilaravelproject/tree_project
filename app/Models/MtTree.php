@@ -39,4 +39,8 @@ class MtTree extends Model
     protected $casts = [
         'all_captured_images' => 'array',
     ];
+    public function project()
+    {
+        return $this->belongsTo(Project::class, 'project_id');
+    }
 }

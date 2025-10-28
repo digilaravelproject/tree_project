@@ -7,6 +7,7 @@ use App\Models\StateMaster;
 use App\Models\User;
 use App\Models\Project;
 use App\Models\UserRating;
+use App\Models\MtTree;
 
 class HomeController extends Controller
 {
@@ -19,8 +20,10 @@ class HomeController extends Controller
     public function home()
     {
         $page_title = 'Home';
+        $projectCount = Project::count();
+        $treeCount = MtTree::count();
 
-        return view('dashboard.home', compact('page_title'));
+        return view('dashboard.home', compact('page_title', 'projectCount', 'treeCount'));
     }
     public function Profile()
     {
@@ -112,21 +115,52 @@ class HomeController extends Controller
 
         return view('dashboard.new_tree', compact('page_title'));
     }
+    // public function add_tree($id)
+    // {
+    //     $page_title = 'Edit Tree';
+
+    //     // Tree fetch using project_id
+    //     $tree = MtTree::where('project_id', $id)->first();
+
+    //     if (!$tree) {
+    //         return redirect()->back()->with('error', 'Tree not found for this project.');
+    //     }
+
+    //     // Relations for dropdowns
+    //     $treeModel = \App\Models\Tree::where('id', $tree->tree_name)->first();
+    //     $scientificModel = \App\Models\ScientificName::where('id', $tree->scientific_name)->first();
+    //     $familyModel = \App\Models\Family::where('id', $tree->family)->first();
+
+    //     // Replace IDs with readable names
+    //     $tree->tree_name = $treeModel ? $treeModel->name : $tree->tree_name;
+    //     $tree->scientific_name = $scientificModel ? $scientificModel->scientific_name : $tree->scientific_name;
+    //     $tree->family = $familyModel ? $familyModel->family_name : $tree->family;
+
+    //     $tree->all_captured_images = json_decode($tree->all_captured_images, true);
+
+    //     return view('dashboard.new_tree', compact('page_title', 'tree'));
+    // }
+
 
 
     public function tree_list()
     {
         $page_title = 'Tree List';
+        $projects = Project::with(['state', 'fieldOfficer'])->get();
 
-        return view('dashboard.tree_list', compact('page_title'));
+        return view('dashboard.tree_list', compact('page_title', 'projects'));
     }
 
 
     public function tree_map()
     {
         $page_title = 'Tree Map';
+        $trees = MtTree::with('project')
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->get(['id', 'tree_name', 'latitude', 'longitude', 'project_id', 'address']);
 
-        return view('dashboard.tree_map', compact('page_title'));
+        return view('dashboard.tree_map', compact('page_title', 'trees'));
     }
 
 

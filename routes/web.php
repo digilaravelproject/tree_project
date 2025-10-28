@@ -52,33 +52,80 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/district/dashboard', [HomeController::class, 'district_dashboard'])->name('district.dashboard');
 
     Route::get('/Profile', [HomeController::class, 'Profile'])->name('profile');
-    Route::get('/add/project', [HomeController::class, 'add_project'])->name('add.project');
-    Route::get('/project/list', [HomeController::class, 'project_list'])->name('project.list');
-    Route::post('projects/store', [HomeController::class, 'store'])->name('projects.store');
-    Route::get('project/edit/{id}', [HomeController::class, 'edit'])->name('projects.edit');
-    Route::post('project/update/{id}', [HomeController::class, 'update'])->name('projects.update');
-    Route::delete('project/delete/{id}', [HomeController::class, 'destroy'])->name('projects.delete');
+    Route::middleware(['can:project'])->group(function () {
+        Route::get('/project/list', [HomeController::class, 'project_list'])->name('project.list');
+    });
+
+    Route::middleware(['can:project.create'])->group(function () {
+        Route::get('/add/project', [HomeController::class, 'add_project'])->name('add.project');
+    });
+
+    Route::middleware(['can:project.store'])->group(function () {
+        Route::get('/add/project', [HomeController::class, 'add_project'])->name('add.project');
+        Route::post('projects/store', [HomeController::class, 'store'])->name('projects.store');
+    });
+
+    Route::middleware(['can:project.edit'])->group(function () {
+        Route::get('project/edit/{id}', [HomeController::class, 'edit'])->name('projects.edit');
+        Route::post('project/update/{id}', [HomeController::class, 'update'])->name('projects.update');
+    });
+
+    Route::middleware(['can:project.delete'])->group(function () {
+        Route::delete('project/delete/{id}', [HomeController::class, 'destroy'])->name('projects.delete');
+    });
+
+
+    // Route::get('/add/project', [HomeController::class, 'add_project'])->name('add.project');
+    // Route::get('/project/list', [HomeController::class, 'project_list'])->name('project.list');
+    // Route::post('projects/store', [HomeController::class, 'store'])->name('projects.store');
+    // Route::get('project/edit/{id}', [HomeController::class, 'edit'])->name('projects.edit');
+    // Route::post('project/update/{id}', [HomeController::class, 'update'])->name('projects.update');
+    // Route::delete('project/delete/{id}', [HomeController::class, 'destroy'])->name('projects.delete');
 
     Route::get('/add/tree', [HomeController::class, 'add_tree'])->name('add.tree');
+    Route::get('/edit/tree/{id}', [HomeController::class, 'add_tree'])->name('trees.edit');
+    // Route::get('/edit/tree/{id}', [HomeController::class, 'add_tree'])->name('tree.update');
+
     Route::get('/List/tree', [HomeController::class, 'tree_list'])->name('tree.list');
     Route::get('/tree/map', [HomeController::class, 'tree_map'])->name('tree.map');
     Route::get('/Distribution/Tracking', [HomeController::class, 'Distribution_Tracking'])->name('distribution.tracking');
 
     Route::get('/report', [HomeController::class, 'report'])->name('report');
-    Route::get('/Inspection/Records', [HomeController::class, 'Records'])->name('Records');
-    Route::get('/Inspection/Schedule', [HomeController::class, 'Schedule'])->name('Schedule');
-    Route::get('/Inspection/Analytics', [HomeController::class, 'Analytics'])->name('Analytics');
+    // Route::get('/Inspection/Records', [HomeController::class, 'Records'])->name('Records');
+    // Route::get('/Inspection/Schedule', [HomeController::class, 'Schedule'])->name('Schedule');
+    // Route::get('/Inspection/Analytics', [HomeController::class, 'Analytics'])->name('Analytics');
 
 
     Route::post('user-ratings/{id}/update', [HomeController::class, 'app_rate_update'])->name('user-ratings.update');
     Route::get('/App/Rating', [HomeController::class, 'rate_app'])->name('rate.app');
 
+    Route::middleware(['can:other'])->group(function () {
+        Route::post('user-ratings/{id}/update', [HomeController::class, 'app_rate_update'])->name('user-ratings.update');
+        Route::get('/App/Rating', [HomeController::class, 'rate_app'])->name('rate.app');
+    });
 
-    Route::resource('faqs', FaqController::class);
-    Route::resource('videos', VideoController::class);
-    Route::resource('contacts', ContactController::class);
-    Route::resource('notes', NoteController::class);
+    // ✅ Individual permissions for each module
+    Route::middleware(['can:other.faqs'])->group(function () {
+        Route::resource('faqs', FaqController::class);
+    });
 
-    Route::resource('privacy', PrivacyPolicyController::class);
-    Route::get('privacy/{privacy}/print', [PrivacyPolicyController::class, 'print'])->name('privacy.print');
+    Route::middleware(['can:other.videos'])->group(function () {
+        Route::resource('videos', VideoController::class);
+    });
+
+    Route::middleware(['can:other.contacts'])->group(function () {
+        Route::resource('contacts', ContactController::class);
+    });
+
+    Route::middleware(['can:other.notes'])->group(function () {
+        Route::resource('notes', NoteController::class);
+    });
+
+    Route::middleware(['can:other.privacy'])->group(function () {
+        Route::resource('privacy', PrivacyPolicyController::class);
+    });
+
+    Route::middleware(['can:other.privacy.print'])->group(function () {
+        Route::get('privacy/{privacy}/print', [PrivacyPolicyController::class, 'print'])->name('privacy.print');
+    });
 });

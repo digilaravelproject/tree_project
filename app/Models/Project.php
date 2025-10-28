@@ -27,4 +27,8 @@ class Project extends Model
     {
         return $this->belongsTo(User::class, 'field_officer_id');
     }
+    public function mtTree()
+    {
+        return $this->hasOne(MtTree::class, 'project_id');
+    }
 }
