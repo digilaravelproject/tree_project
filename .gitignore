@@ -1,24 +1,65 @@
-*.log
-.DS_Store
+# =====================================
+# 🧩 Laravel / PHP Project Ignore List
+# Works for both Git and ZIP packaging
+# =====================================
+
+# --- Environment & Config ---
 .env
-.env.backup
-.env.production
-.phpactor.json
-.phpunit.result.cache
-/.fleet
-/.idea
-/.nova
-/.phpunit.cache
-/.vscode
-/.zed
-/auth.json
-/node_modules
-/public/build
-/public/hot
-/public/storage
-/storage/*.key
-/storage/pail
-/vendor
+.env.*
+*.key
+auth.json
 Homestead.json
 Homestead.yaml
+
+# --- Logs & Temp ---
+*.log
+storage/logs/
+storage/debugbar/
+storage/pail/
+storage/framework/cache/
+storage/framework/sessions/
+storage/framework/views/
+
+# --- Vendor & Dependencies ---
+vendor/
+node_modules/
+composer.lock
+package-lock.json
+
+# --- Public Build Artifacts ---
+public/build/
+public/hot
+public/storage/
+
+# --- IDE / Editor Configs ---
+.phpactor.json
+.phpunit.result.cache
+/.phpunit.cache
+/.idea/
+.vscode/
+.fleet/
+.zed/
+.nova/
+
+# --- OS Generated Files ---
+.DS_Store
 Thumbs.db
+
+# --- Backup / Misc Files ---
+*.bak
+*.backup
+*.old
+*.zip
+
+# --- Optional: cache or test coverage files ---
+coverage/
+.phpunit.cache/
+.phpunit.result.cache
+
+# --- Custom folders you want ZIP to ignore ---
+/tests
+/database/seeders/
+/database/factories/
+
+# --- If you use custom build script (like makezip.php) ---
+makezip.php
