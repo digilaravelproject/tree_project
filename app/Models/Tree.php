@@ -22,4 +22,8 @@ class Tree extends Model
     {
         return $this->hasMany(MtTree::class, 'tree_name', 'id');
     }
+    public function scientific()
+    {
+        return $this->hasOne(ScientificName::class, 'tree_id');
+    }
 }

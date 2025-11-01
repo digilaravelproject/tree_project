@@ -11,7 +11,9 @@ use App\Models\Tree;
 use App\Models\ScientificName;
 use App\Models\Family;
 use App\Models\MtTree;
+use App\Models\District;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\DB;
 
 
 class HomeController extends Controller
@@ -27,8 +29,9 @@ class HomeController extends Controller
         $page_title = 'Home';
         $projectCount = Project::count();
         $treeCount = MtTree::count();
+        $districtCount = District::count();
 
-        return view('dashboard.home', compact('page_title', 'projectCount', 'treeCount'));
+        return view('dashboard.home', compact('page_title', 'projectCount', 'treeCount', 'districtCount'));
     }
     public function Profile()
     {
@@ -378,5 +381,113 @@ class HomeController extends Controller
         ]);
 
         return redirect()->back()->with('success', 'Rating updated successfully!');
+    }
+    public function add_tree_name()
+    {
+        $page_title = 'Create Tree Name';
+        return view('dashboard.add_tree_name', compact('page_title'));
+    }
+
+
+    public function new_tree_add(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'scientific_name' => 'required|string|max:255',
+            'family_name' => 'required|string|max:255',
+            'height_ratio' => 'nullable|string|max:255',
+            'age_ratio' => 'nullable|string|max:255',
+            'canopy_ratio' => 'nullable|string|max:255',
+        ]);
+
+        DB::transaction(function () use ($request) {
+            // 1️⃣ Create Tree record first
+            $tree = \App\Models\Tree::create([
+                'name' => $request->name,
+            ]);
+
+            // 2️⃣ Create ScientificName record linked with tree_id
+            \App\Models\ScientificName::create([
+                'tree_id'        => $tree->id,
+                'scientific_name' => $request->scientific_name,
+                'height_ratio'   => $request->height_ratio,
+                'age_ratio'      => $request->age_ratio,
+                'canopy_ratio'   => $request->canopy_ratio,
+            ]);
+
+            // 3️⃣ Create Family record linked with same tree_id
+            \App\Models\Family::create([
+                'tree_id'     => $tree->id,
+                'family_name' => $request->family_name,
+            ]);
+        });
+
+        // 4️⃣ Redirect with success message
+        return redirect()->route('tree.name.list')->with('success', 'Tree created successfully!');
+    }
+    public function tree_list_add()
+    {
+        $page_title = "Tree List";
+        $trees = \App\Models\Tree::with(['scientific', 'family'])
+            ->orderBy('id', 'desc')
+            ->get(); // 👈 No pagination
+
+        return view('dashboard.tree_name_list', compact('trees', 'page_title'));
+    }
+    public function list_edit($id)
+    {
+        $page_title = "Edit Tree";
+
+        $tree = Tree::with(['scientific', 'family'])->findOrFail($id);
+
+        return view('dashboard.list_tree_edit', compact('page_title', 'tree'));
+    }
+
+    // ✅ Update Tree
+    public function list_update(Request $request, $id)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'scientific_name' => 'required|string|max:255',
+            'family_name' => 'required|string|max:255',
+            'height_ratio' => 'nullable|string|max:255',
+            'age_ratio' => 'nullable|string|max:255',
+            'canopy_ratio' => 'nullable|string|max:255',
+        ]);
+
+        DB::transaction(function () use ($request, $id) {
+            $tree = Tree::findOrFail($id);
+            $tree->update(['name' => $request->name]);
+
+            $scientific = ScientificName::where('tree_id', $tree->id)->first();
+            if ($scientific) {
+                $scientific->update([
+                    'scientific_name' => $request->scientific_name,
+                    'height_ratio' => $request->height_ratio,
+                    'age_ratio' => $request->age_ratio,
+                    'canopy_ratio' => $request->canopy_ratio,
+                ]);
+            }
+
+            $family = Family::where('tree_id', $tree->id)->first();
+            if ($family) {
+                $family->update(['family_name' => $request->family_name]);
+            }
+        });
+
+        return redirect()->route('tree.name.list')->with('success', 'Tree updated successfully!');
+    }
+
+    // ✅ Delete Tree
+    public function list_destroy($id)
+    {
+        DB::transaction(function () use ($id) {
+            $tree = Tree::findOrFail($id);
+            ScientificName::where('tree_id', $tree->id)->delete();
+            Family::where('tree_id', $tree->id)->delete();
+            $tree->delete();
+        });
+
+        return redirect()->route('tree.name.list')->with('success', 'Tree deleted successfully!');
     }
 }

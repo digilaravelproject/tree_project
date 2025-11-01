@@ -98,7 +98,7 @@
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div class="flex-shrink-0 align-self-end">
                                             <p class="f-s-16 mb-0">Districts Covered</p>
-                                            <h5>45</h5>
+                                            <h5>{{ $districtCount }}</h5>
                                         </div>
                                         <div class="activity-chart">
                                             <div id="activityChart"></div>
@@ -107,6 +107,7 @@
                                 </div>
                             </div>
                         </div>
+
                     </div>
 
 

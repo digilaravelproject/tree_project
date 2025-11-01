@@ -11,6 +11,9 @@ use App\Http\Controllers\VideoController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\NoteController;
 use App\Http\Controllers\PrivacyPolicyController;
+use App\Http\Controllers\AdminAuthController;
+use App\Http\Controllers\DistrictController;
+use App\Http\Controllers\TahsilController;
 
 Route::get('/generate-hash', function () {
     $password = 'vedantgamechanger18';
@@ -21,6 +24,16 @@ Route::get('/generate-hash', function () {
 Route::get('/', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.store');;
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+
+//forget password
+Route::get('admin/forgot-password', [AdminAuthController::class, 'showForgotPassword'])->name('admin.forgot.password');
+Route::post('admin/send-otp', [AdminAuthController::class, 'sendResetOtp'])->name('admin.send.otp');
+Route::get('admin/verify-otp', [AdminAuthController::class, 'showVerifyOtp'])->name('admin.verify.otp.page');
+
+Route::post('admin/verify-otp', [AdminAuthController::class, 'verifyOtp'])->name('admin.verify.otp');
+Route::get('admin/reset-password', [AdminAuthController::class, 'showResetPassword'])->name('admin.reset.password.page');
+Route::post('admin/reset-password', [AdminAuthController::class, 'resetPassword'])->name('admin.reset.password');
 
 Route::middleware(['auth'])->group(function () {
 
@@ -87,6 +100,13 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/List/tree', [HomeController::class, 'tree_list'])->name('tree.list');
         Route::get('/edit/tree/{id}', [HomeController::class, 'edit_tree'])->name('trees.edit');
         Route::put('/trees/update/{tree_id}', [HomeController::class, 'update_tree'])->name('trees.update');
+        Route::get('/add-tree/name', [HomeController::class, 'add_tree_name'])->name('tree.name.add');
+        Route::post('/add-tree/store', [HomeController::class, 'new_tree_add'])->name('tree.name.added');
+        Route::get('/tree-name-list', [HomeController::class, 'tree_list_add'])->name('tree.name.list');
+
+        Route::get('/List-trees/{id}/edit', [HomeController::class, 'list_edit'])->name('list.trees.edit');
+        Route::put('/List-trees/{id}', [HomeController::class, 'list_update'])->name('list.trees.update');
+        Route::delete('/List-trees/{id}', [HomeController::class, 'list_destroy'])->name('list.trees.destroy');
     });
     // Route::get('/edit/tree/{id}', [HomeController::class, 'add_tree'])->name('tree.update');
 
@@ -99,6 +119,26 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/project/report', [HomeController::class, 'project_report'])->name('project.report');
         Route::get('/project-report', [HomeController::class, 'project_report'])->name('project.report');
         Route::get('/tree/report', [HomeController::class, 'tree_report'])->name('tree.report');
+
+
+        Route::get('districts', [DistrictController::class, 'index'])->name('district.index');
+        Route::post('districts/store', [DistrictController::class, 'store'])->name('district.store');
+        Route::post('districts/update/{district}', [DistrictController::class, 'update'])->name('district.update');
+        Route::delete('districts/delete/{district}', [DistrictController::class, 'destroy'])->name('district.destroy');
+        Route::get('districts/export', [DistrictController::class, 'export'])->name('district.export');
+
+        Route::get('/tahsil', [TahsilController::class, 'index'])->name('tahsil.index');
+        Route::post('/tahsil/store', [TahsilController::class, 'store'])->name('tahsil.store');
+        Route::get('/tahsil/edit/{id}', [TahsilController::class, 'edit'])->name('tahsil.edit');
+
+        Route::post('/tahsil/update/{id}', [TahsilController::class, 'update'])->name('tahsil.update');
+        Route::delete('/tahsil/delete/{id}', [TahsilController::class, 'destroy'])->name('tahsil.destroy');
+        Route::get('/tahsil/export', [TahsilController::class, 'export'])->name('tahsil.export');
+
+
+
+        // Route::get('/district/list', [HomeController::class, 'district_list'])->name('district.list');
+        // Route::get('/district/add', [HomeController::class, 'district_add'])->name('district.add');
     });
     // Route::get('/Inspection/Records', [HomeController::class, 'Records'])->name('Records');
     // Route::get('/Inspection/Schedule', [HomeController::class, 'Schedule'])->name('Schedule');

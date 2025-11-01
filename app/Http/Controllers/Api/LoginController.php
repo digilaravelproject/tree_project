@@ -9,6 +9,7 @@ use App\Models\Role;
 use App\Models\UserRating;
 use App\Models\Faq;
 use Auth;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Validator;
@@ -133,6 +134,7 @@ class LoginController extends Controller
     }
     public function project_assign_officer($id)
     {
+
         try {
             $projects = Project::with(['state', 'fieldOfficer'])
                 ->where('field_officer_id', $id)
@@ -169,6 +171,7 @@ class LoginController extends Controller
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'email' => 'required|email|max:255|unique:users,email',
+                'phone' => 'required|string|max:15|unique:users,phone',
                 'password' => 'required|confirmed|min:8',
             ]);
         } catch (ValidationException $e) {
@@ -193,6 +196,7 @@ class LoginController extends Controller
             $user = new User();
             $user->name = $validated['name'];
             $user->email = filter_var($validated['email'], FILTER_SANITIZE_EMAIL);
+            $user->phone = $validated['phone'];
             $user->role_id = 2;
             $user->district_id = $validated['district_id'] ?? null;
             $user->designation = $validated['designation'] ?? null;
@@ -219,6 +223,7 @@ class LoginController extends Controller
         }
     }
 
+
     public function user_rating(Request $request)
     {
         try {
@@ -235,14 +240,28 @@ class LoginController extends Controller
             ], 422);
         }
 
-        $rating = UserRating::create($validated);
+        // ✅ Check if user already has a rating
+        $existingRating = UserRating::where('user_id', $validated['user_id'])->first();
+
+        if ($existingRating) {
+            $existingRating->update([
+                'rating' => $validated['rating'],
+                'comment' => $validated['comment'] ?? null,
+            ]);
+            $rating = $existingRating;
+            $message = 'Rating updated successfully';
+        } else {
+            $rating = UserRating::create($validated);
+            $message = 'Rating submitted successfully';
+        }
 
         return response()->json([
             'success' => true,
-            'message' => 'Rating submitted successfully',
+            'message' => $message,
             'data' => $rating,
         ], 200);
     }
+
 
     // Get all ratings for a specific user
     public function userRatings($user_id)

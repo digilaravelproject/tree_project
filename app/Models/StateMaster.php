@@ -26,4 +26,8 @@ class StateMaster extends Model
         'state_name',
         'short_code',
     ];
+    public function districts()
+    {
+        return $this->hasMany(District::class, 'state_id');
+    }
 }

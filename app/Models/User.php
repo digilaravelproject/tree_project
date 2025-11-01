@@ -24,6 +24,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'phone',
         'password',
         'role_id',
         'designation',
@@ -58,9 +59,9 @@ class User extends Authenticatable
     {
         return $this->belongsTo(District::class, 'district_id');
     }
-    
-public function roles()
-{
-    return $this->belongsToMany(Role::class, 'model_has_roles', 'model_id', 'role_id');
-}
+
+    public function roles()
+    {
+        return $this->belongsToMany(Role::class, 'model_has_roles', 'model_id', 'role_id');
+    }
 }

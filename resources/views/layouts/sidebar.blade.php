@@ -1,4 +1,5 @@
 <body>
+
     <div class="app-wrapper">
 
         <div class="loader-wrapper">
@@ -55,7 +56,7 @@
                             <a class="" data-bs-toggle="collapse" href="#dashboard" aria-expanded="false">
                                 <i class="ph-duotone ph-boat"></i>
                                 Project
-                                <span class="badge text-bg-success badge-notification ms-2">3</span>
+                                <span class="badge text-bg-success badge-notification ms-2">2</span>
                             </a>
                             <ul class="collapse" id="dashboard">
                                 @can('project.store')
@@ -66,9 +67,6 @@
                                     <li><a href="{{ route('project.list') }}">Project List</a></li>
                                 @endcan
 
-                                @can('project.list')
-                                    <li><a href="{{ route('project.list') }}">Project Setting</a></li>
-                                @endcan
                             </ul>
                         </li>
                     @endcanany
@@ -78,10 +76,12 @@
                             <a class="" data-bs-toggle="collapse" href="#ghaats" aria-expanded="false">
                                 <i class="ph-duotone  ph ph-waves"></i>
                                 Tree Data
-                                <span class="badge text-bg-success badge-notification ms-2">1</span>
+                                <span class="badge text-bg-success badge-notification ms-2">2</span>
                             </a>
                             <ul class="collapse" id="ghaats">
                                 <li><a href="{{ route('tree.list') }}">Tree List</a></li>
+                                <li><a href="{{ route('tree.name.add') }}">Create Tree Name</a></li>
+                                <li><a href="{{ route('tree.name.list') }}">Tree Name List</a></li>
                             </ul>
                         </li>
                     @endcanany
@@ -104,12 +104,13 @@
                             <a class="" data-bs-toggle="collapse" href="#Inspection" aria-expanded="false">
                                 <i class="ph-duotone ph-magnifying-glass"></i>
                                 Master
-                                <span class="badge text-bg-success badge-notification ms-2">1</span>
+                                <span class="badge text-bg-success badge-notification ms-2">4</span>
                             </a>
                             <ul class="collapse" id="Inspection">
                                 <li><a href="{{ route('project.report') }}"> Project Report</a></li>
                                 <li><a href="{{ route('tree.report') }}"> Tree Report</a></li>
-
+                                <li><a href="{{ route('district.index') }}"> District</a></li>
+                                <li><a href="{{ route('tahsil.index') }}">Taluka</a></li>
                             </ul>
                         </li>
                     @endcan

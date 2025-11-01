@@ -12,7 +12,7 @@
     <meta name="author" content="la-themes">
     <link rel="icon" href="{{ asset('assets/images/logo/favicon.png') }}" type="image/x-icon">
     <link rel="shortcut icon" href="{{ asset('assets/images/logo/favicon.png') }}" type="image/x-icon">
-    <title>Tree Expert | Login</title>
+    <title>Tree Expert | Verify OTP</title>
 
     <link rel="stylesheet" href="{{ asset('assets/vendor/fontawesome/css/all.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -36,13 +36,15 @@
                             </div>
 
                             <div class="form_container">
-                                <form class="app-form" action="{{ route('login.store') }}" method="POST">
+                                <form class="app-form" action="{{ route('admin.verify.otp') }}" method="POST">
                                     @csrf
+                                    <input type="hidden" name="email" value="{{ request('email') }}">
+
                                     <div class="mb-3 text-center">
-                                        <h3>Login to your Account</h3>
-                                        <p class="f-s-12 text-secondary">Get started with our app, just login and enjoy.
-                                        </p>
+                                        <h3>Verify OTP</h3>
+                                        <p class="f-s-12 text-secondary">Enter the OTP sent to your email address.</p>
                                     </div>
+
                                     @if ($errors->any())
                                         <div class="alert alert-danger text-center">
                                             {{ $errors->first() }}
@@ -50,30 +52,19 @@
                                     @endif
 
                                     <div class="mb-3">
-                                        <label class="form-label">Email address</label>
-                                        <input type="email" name="email" class="form-control" required>
-                                        <div class="form-text">We'll never share your email with anyone else.</div>
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label class="form-label">Password</label>
-                                        <input type="password" name="password" class="form-control" required>
-                                    </div>
-
-                                    <div class="mb-3 d-flex justify-content-between align-items-center">
-                                        <div class="form-check">
-                                            <input type="checkbox" name="remember" class="form-check-input"
-                                                id="formCheck1">
-                                            <label class="form-check-label" for="formCheck1">Remember me</label>
-                                        </div>
-                                        <a href="{{ route('admin.forgot.password') }}"
-                                            class="text-secondary text-decoration-underline">
-                                            Forgot Password?
-                                        </a>
+                                        <label class="form-label">Enter OTP</label>
+                                        <input type="text" name="otp" class="form-control" required>
                                     </div>
 
                                     <div>
-                                        <button type="submit" class="btn btn-primary w-100">Submit</button>
+                                        <button type="submit" class="btn btn-primary w-100">Verify OTP</button>
+                                    </div>
+
+                                    <div class="text-center mt-3">
+                                        <a href="{{ route('admin.forgot.password') }}"
+                                            class="text-secondary text-decoration-underline">
+                                            Resend OTP
+                                        </a>
                                     </div>
                                 </form>
                             </div>
