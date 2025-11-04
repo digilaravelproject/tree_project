@@ -134,10 +134,9 @@ class LoginController extends Controller
     }
     public function project_assign_officer($id)
     {
-
         try {
             $projects = Project::with(['state', 'fieldOfficer'])
-                ->where('field_officer_id', $id)
+                ->whereRaw("JSON_CONTAINS(field_officer_id, '\"$id\"')")
                 ->get();
 
             if ($projects->isEmpty()) {
@@ -163,6 +162,7 @@ class LoginController extends Controller
             ], 500);
         }
     }
+
 
     public function user_register(Request $request)
     {

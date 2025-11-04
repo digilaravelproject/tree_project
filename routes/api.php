@@ -31,7 +31,7 @@ Route::middleware('auth:sanctum')->get('/tree-list', [WorkController::class, 'tr
 Route::middleware('auth:sanctum')->post('/tree/measure', [WorkController::class, 'calculate']);
 Route::middleware('auth:sanctum')->get('/dashboard', [TreeController::class, 'dashboard_count']);
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/trees-add', [TreeController::class, 'index']);           // List all trees
+    Route::get('/trees-add/{id}', [TreeController::class, 'index']);           // List all trees
     Route::get('/tree-show/{id}', [TreeController::class, 'show']);       // Show one tree
     Route::post('/trees-add', [TreeController::class, 'store']);       // Create new tree
     Route::post('/tree-measure/{id}', [TreeController::class, 'update']);

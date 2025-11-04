@@ -50,7 +50,6 @@
                                     <div class="invalid-feedback">Please select a state.</div>
                                 </div>
 
-
                                 <div class="col-md-6">
                                     <label for="clientName" class="form-label">Client Name <span
                                             class="text-danger">*</span></label>
@@ -71,16 +70,27 @@
                                     <label for="fieldOfficerName" class="form-label">
                                         Field Officer Name <span class="text-danger">*</span>
                                     </label>
-                                    <select name="field_officer_name" id="fieldOfficerName" class="form-select" required>
-                                        <option value="" disabled selected>Select field officer</option>
+
+                                    <select name="field_officer_name[]" id="fieldOfficerName" class="form-select" multiple
+                                        required>
                                         @foreach ($officers as $officer)
                                             <option value="{{ $officer->id }}"
-                                                {{ old('field_officer_name') == $officer->name ? 'selected' : '' }}>
+                                                {{ collect(old('field_officer_name'))->contains($officer->id) ? 'selected' : '' }}>
                                                 {{ $officer->name }}
                                             </option>
                                         @endforeach
                                     </select>
-                                    <div class="invalid-feedback">Please select a field officer.</div>
+                                    <div class="invalid-feedback">Please select at least one field officer.</div>
+                                </div>
+
+
+                                <!-- ✅ New Limit Field -->
+                                <div class="col-md-6">
+                                    <label for="limit" class="form-label">Limit <span
+                                            class="text-danger">*</span></label>
+                                    <input type="number" name="limit" class="form-control" id="limit"
+                                        placeholder="Enter project limit" value="{{ old('limit') }}" required>
+                                    <div class="invalid-feedback">Please enter project limit.</div>
                                 </div>
 
                                 <div class="col-12 mt-3">
@@ -98,3 +108,13 @@
     </main>
     <!-- Body main section ends -->
 @endsection
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        new Choices('#fieldOfficerName', {
+            removeItemButton: true,
+            searchEnabled: true,
+            placeholderValue: 'Select field officer(s)',
+            searchPlaceholderValue: 'Type to search...',
+        });
+    });
+</script>

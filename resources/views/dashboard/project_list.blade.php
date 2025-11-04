@@ -30,35 +30,16 @@
                 </script>
             @endpush
 
-
-
-
-
-
             <!-- Breadcrumb start -->
             <div class="row m-1">
                 <div class="col-12 ">
                     <h4 class="main-title mb-3">Project List</h4>
-                    <!-- <ul class="app-line-breadcrumbs mb-3">
-                                                            <li class="">
-                                                                <a href="#" class="f-s-14 f-w-500">
-                                                                    <span>
-                                                                        <i class="ph-duotone  ph-table f-s-16"></i> Table
-                                                                    </span>
-                                                                </a>
-                                                            </li>
-                                                            <li class="active">
-                                                                <a href="#" class="f-s-14 f-w-500">Data Table</a>
-                                                            </li>
-                                                        </ul> -->
                 </div>
             </div>
-
             <!-- Breadcrumb end -->
 
             <!-- Data Table start -->
             <div class="row">
-                <!-- Default Datatable start -->
                 <div class="col-12">
                     <div class="card ">
                         <div class="card-body p-0">
@@ -83,7 +64,37 @@
                                                 <td>{{ $project->state->state_name ?? '-' }}</td>
                                                 <td>{{ $project->company_name ?? '-' }}</td>
                                                 <td>{{ $project->created_at ?? '-' }}</td>
-                                                <td>{{ $project->fieldOfficer->name ?? '-' }}</td>
+
+                                                <!-- ✅ Officer Name with rgb(79 201 218) background -->
+                                                <td>
+                                                    @php
+                                                        $officerIds = json_decode($project->field_officer_id, true);
+                                                    @endphp
+
+                                                    @if (is_array($officerIds) && count($officerIds) > 0)
+                                                        @php
+                                                            $officers = \App\Models\User::whereIn('id', $officerIds)->pluck('name')->toArray();
+                                                        @endphp
+
+                                                        @foreach ($officers as $name)
+                                                            <span style="
+                                                                background-color: rgb(79 201 218);
+                                                                color: #fff;
+                                                                padding: 5px 10px;
+                                                                border-radius: 8px;
+                                                                margin-right: 4px;
+                                                                display: inline-block;
+                                                                font-size: 13px;
+                                                                font-weight: 500;
+                                                                ">
+                                                                {{ $name }}
+                                                            </span>
+                                                        @endforeach
+                                                    @else
+                                                        -
+                                                    @endif
+                                                </td>
+
                                                 <td>
                                                     <a href="{{ route('projects.edit', $project->id) }}"
                                                         class="btn btn-light-success icon-btn b-r-4">
@@ -100,7 +111,6 @@
                                                         </button>
                                                     </form>
                                                 </td>
-
                                             </tr>
                                         @endforeach
                                     </tbody>
@@ -110,12 +120,9 @@
                         </div>
                     </div>
                 </div>
-                <!-- Default Datatable end -->
-
             </div>
             <!-- Data Table end -->
         </div>
     </main>
-
     <!-- Body main section ends -->
 @endsection

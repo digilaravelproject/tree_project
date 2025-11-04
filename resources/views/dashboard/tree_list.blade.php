@@ -39,18 +39,22 @@
             <div class="row m-1">
                 <div class="col-12 ">
                     <h4 class="main-title mb-3">Project List</h4>
+                    <a href="{{ route('generate.all.kml') }}" class="btn btn-success">
+                        Download All Trees KML
+                    </a>
+
                     <!-- <ul class="app-line-breadcrumbs mb-3">
-                                                                                    <li class="">
-                                                                                        <a href="#" class="f-s-14 f-w-500">
-                                                                                            <span>
-                                                                                                <i class="ph-duotone  ph-table f-s-16"></i> Table
-                                                                                            </span>
-                                                                                        </a>
-                                                                                    </li>
-                                                                                    <li class="active">
-                                                                                        <a href="#" class="f-s-14 f-w-500">Data Table</a>
-                                                                                    </li>
-                                                                                </ul> -->
+                                                                                        <li class="">
+                                                                                            <a href="#" class="f-s-14 f-w-500">
+                                                                                                <span>
+                                                                                                    <i class="ph-duotone  ph-table f-s-16"></i> Table
+                                                                                                </span>
+                                                                                            </a>
+                                                                                        </li>
+                                                                                        <li class="active">
+                                                                                            <a href="#" class="f-s-14 f-w-500">Data Table</a>
+                                                                                        </li>
+                                                                                    </ul> -->
                 </div>
             </div>
 

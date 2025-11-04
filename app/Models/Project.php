@@ -16,6 +16,7 @@ class Project extends Model
         'client_name',
         'company_name',
         'field_officer_id',
+        'limit', // ✅ new column added
     ];
 
     public function state()
@@ -27,6 +28,7 @@ class Project extends Model
     {
         return $this->belongsTo(User::class, 'field_officer_id');
     }
+
     public function mtTree()
     {
         return $this->hasOne(MtTree::class, 'project_id');

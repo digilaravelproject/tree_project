@@ -14,6 +14,9 @@ use App\Models\MtTree;
 use App\Models\District;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
+use App\Imports\TreesImport;
+use Maatwebsite\Excel\Facades\Excel;
+
 
 
 class HomeController extends Controller
@@ -57,14 +60,14 @@ class HomeController extends Controller
 
     public function store(Request $request)
     {
-        //print_r($request->all());
-        //die;
         $request->validate([
             'project_name' => 'required|string|max:255',
             'state' => 'required|exists:state_master,id',
             'client_name' => 'required|string|max:255',
             'company_name' => 'required|string|max:255',
-            'field_officer_name' => 'required|exists:users,id',
+            'field_officer_name' => 'required|array',
+            'field_officer_name.*' => 'exists:users,id',
+            'limit' => 'required|numeric|min:1',
         ]);
 
         Project::create([
@@ -72,11 +75,14 @@ class HomeController extends Controller
             'state_id' => $request->state,
             'client_name' => $request->client_name,
             'company_name' => $request->company_name,
-            'field_officer_id' => $request->field_officer_name,
+            'field_officer_id' => json_encode($request->field_officer_name), // ✅ store as JSON
+            'limit' => $request->limit,
         ]);
 
         return redirect()->route('project.list')->with('success', 'Project created successfully!');
     }
+
+
 
 
     public function project_list()
@@ -109,13 +115,24 @@ class HomeController extends Controller
             'client_name' => 'nullable|string|max:255',
             'state_id' => 'required|exists:state_master,id',
             'company_name' => 'nullable|string|max:255',
-            'field_officer_id' => 'required|exists:users,id',
+            'field_officer_id' => 'required|array',
+            'field_officer_id.*' => 'exists:users,id',
+            'limit' => 'required|numeric|min:1',
         ]);
 
-        $project->update($request->all());
+        // Convert multiple officer IDs to JSON
+        $project->update([
+            'project_name' => $request->project_name,
+            'client_name' => $request->client_name,
+            'state_id' => $request->state_id,
+            'company_name' => $request->company_name,
+            'field_officer_id' => json_encode($request->field_officer_id),
+            'limit' => $request->limit,
+        ]);
 
         return redirect()->route('project.list')->with('success', 'Project updated successfully.');
     }
+
 
     // public function add_tree()
     // {
@@ -489,5 +506,15 @@ class HomeController extends Controller
         });
 
         return redirect()->route('tree.name.list')->with('success', 'Tree deleted successfully!');
+    }
+    public function importTrees(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls,csv'
+        ]);
+
+        Excel::import(new TreesImport, $request->file('file'));
+
+        return redirect()->route('tree.name.list')->with('success', 'Trees imported successfully!');
     }
 }

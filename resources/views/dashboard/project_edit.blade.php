@@ -14,11 +14,13 @@
                         <input type="text" name="project_name" class="form-control"
                             value="{{ old('project_name', $project->project_name) }}" required>
                     </div>
+
                     <div class="col-md-6 mb-3">
                         <label>Client Name</label>
                         <input type="text" name="client_name" class="form-control"
                             value="{{ old('client_name', $project->client_name) }}">
                     </div>
+
                     <div class="col-md-6 mb-3">
                         <label>State</label>
                         <select name="state_id" class="form-select" required>
@@ -31,22 +33,35 @@
                             @endforeach
                         </select>
                     </div>
+
                     <div class="col-md-6 mb-3">
                         <label>Company Name</label>
                         <input type="text" name="company_name" class="form-control"
                             value="{{ old('company_name', $project->company_name) }}">
                     </div>
+
+                    <!-- ✅ Multiple select for Field Officer -->
                     <div class="col-md-6 mb-3">
                         <label>Field Officer</label>
-                        <select name="field_officer_id" class="form-select" required>
-                            <option value="">Select Officer</option>
+                        @php
+                            $selectedOfficers = is_array(json_decode($project->field_officer_id, true))
+                                ? json_decode($project->field_officer_id, true)
+                                : [];
+                        @endphp
+                        <select id="fieldOfficerName" name="field_officer_id[]" class="form-select" multiple required>
                             @foreach ($officers as $officer)
                                 <option value="{{ $officer->id }}"
-                                    {{ $project->field_officer_id == $officer->id ? 'selected' : '' }}>
+                                    {{ in_array($officer->id, $selectedOfficers) ? 'selected' : '' }}>
                                     {{ $officer->name }}
                                 </option>
                             @endforeach
                         </select>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label>Limit</label>
+                        <input type="number" name="limit" class="form-control"
+                            value="{{ old('limit', $project->limit) }}" required min="1">
                     </div>
                 </div>
 
@@ -54,4 +69,16 @@
             </form>
         </div>
     </main>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            new Choices('#fieldOfficerName', {
+                removeItemButton: true,
+                searchEnabled: true,
+                placeholderValue: 'Select field officer(s)',
+                searchPlaceholderValue: 'Type to search...',
+            });
+        });
+    </script>
 @endsection

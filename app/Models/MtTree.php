@@ -13,6 +13,7 @@ class MtTree extends Model
 
     protected $fillable = [
         'project_id',
+        'user_id',
         'ward_plot_no',
         'tree_no',
         'tree_name',

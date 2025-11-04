@@ -14,6 +14,7 @@ use App\Http\Controllers\PrivacyPolicyController;
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\DistrictController;
 use App\Http\Controllers\TahsilController;
+use App\Http\Controllers\KmlController;
 
 Route::get('/generate-hash', function () {
     $password = 'vedantgamechanger18';
@@ -104,9 +105,13 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/add-tree/store', [HomeController::class, 'new_tree_add'])->name('tree.name.added');
         Route::get('/tree-name-list', [HomeController::class, 'tree_list_add'])->name('tree.name.list');
 
+        Route::post('/trees/import', [HomeController::class, 'importTrees'])->name('trees.import');
+
         Route::get('/List-trees/{id}/edit', [HomeController::class, 'list_edit'])->name('list.trees.edit');
         Route::put('/List-trees/{id}', [HomeController::class, 'list_update'])->name('list.trees.update');
         Route::delete('/List-trees/{id}', [HomeController::class, 'list_destroy'])->name('list.trees.destroy');
+        //kml file create route
+        Route::get('/generate-all-kml', [KmlController::class, 'generateAllKml'])->name('generate.all.kml');
     });
     // Route::get('/edit/tree/{id}', [HomeController::class, 'add_tree'])->name('tree.update');
 
