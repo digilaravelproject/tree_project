@@ -70,14 +70,27 @@ class WorkController extends Controller
             ], 500);
         }
     }
-    public function tree_list()
+    
+    public function tree_list_old()
     {
         $trees = Tree::all(['id', 'name']);
-
         return response()->json($trees);
     }
-
-
+    
+    public function tree_list()
+    {
+        $trees = Tree::leftJoin('scientific_names', 'trees.id', '=', 'scientific_names.tree_id')
+            ->leftJoin('families', 'scientific_names.tree_id', '=', 'families.tree_id')
+            ->select(
+                'trees.id',
+                'trees.name AS tree_name',
+                'scientific_names.scientific_name',
+                'families.family_name'
+            )
+            ->get();
+    
+        return response()->json($trees);
+    }
 
     public function privacy_po(Request $request)
     {

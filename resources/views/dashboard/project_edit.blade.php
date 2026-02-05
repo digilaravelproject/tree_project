@@ -65,7 +65,7 @@
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-primary">Update Project</button>
+                <button type="submit" class="btn" style="background-color: #7cb342; color: #ffffff;">Update Project</button>
             </form>
         </div>
     </main>

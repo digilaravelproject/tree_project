@@ -91,7 +91,7 @@
                                                 </td>
                                                 <td>{{ $rating->updated_at->format('d M, Y H:i') }}</td>
                                                 <td>
-                                                    <button type="submit" class="btn btn-success btn-sm">Update</button>
+                                                    <button type="submit" class="btn btn-sm" style="background-color: #7cb342; color: #ffffff;">Update</button>
                                                     </form>
                                                 </td>
                                             </tr>

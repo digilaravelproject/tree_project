@@ -94,7 +94,7 @@
                                 </div>
 
                                 <div class="col-12 mt-3">
-                                    <button class="btn btn-success" type="submit">Create Project</button>
+                                    <button class="btn" style="background-color: #7cb342; color: #ffffff;" type="submit">Create Project</button>
                                     <button class="btn btn-secondary" type="reset">Cancel</button>
                                 </div>
                             </form>

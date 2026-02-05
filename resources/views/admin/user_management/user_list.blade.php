@@ -5,110 +5,127 @@
 
 @section('content')
 
-    <!-- Body main section starts -->
     <main>
         <div class="container-fluid">
-            <!-- Breadcrumb start -->
-            <!-- <div class="row m-1">
-                    <div class="col-12 ">
-                        <h4 class="main-title mb-3">User Roles</h4>
-                    </div>
-                </div> -->
-
-            <!-- Breadcrumb end -->
-
-            <!-- Data Table start -->
             <div class="row">
-                <!-- Default Datatable start -->
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <h4 class="mb-0">User List</h4>
-                             @can('user_management.user.create')
-              <a class="btn btn-sm btn-primary" href="{{ route('create.user') }}">Create User</a>
-              @endcan
-                          
+                            <a href="{{ route('create.user') }}" class="btn btn-sm" style="background-color: #7cb342; color: #ffffff;">
+                                <i class="ph ph-plus"></i> Add New User
+                            </a>
                         </div>
 
-                        <div class="card-body p-0">
-                            <div class="app-datatable-default overflow-auto">
-                                <table id="example" class="display app-data-table default-data-table">
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-striped" id="userTable">
                                     <thead>
                                         <tr>
-                                            <th>SR NO</th>
-                                            <th>District</th>
+                                            <th>#</th>
                                             <th>Name</th>
-                                            <th>Email</th>
-                                            <th>Role</th>
                                             <th>Designation</th>
+                                            <th>Email</th>
+                                            <th>Mobile Number</th>
+                                            <th>Role</th>
+                                            <th>District</th>
+                                            <th>Ward Number</th>
+                                            <th>Gender</th>
                                             <th>Status</th>
                                             <th>Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @foreach($users as $index => $user)
+                                        @forelse($users as $key => $user)
                                             <tr>
-                                                <td>{{ $index + 1 }}</td>
-                                                <td>{{ $user->district->district_name ?? 'N/A' }}</td>
-                                                <td>{{ $user->name ?? 'N/A' }}</td>
-                                                <td>{{ $user->email ?? 'N/A' }}</td>
-                                                <td>{{ $user->roles->pluck('name')->implode(', ') ?? 'N/A'}}</td>
+                                                <td>{{ $key + 1 }}</td>
+                                                <td>{{ $user->name }}</td>
                                                 <td>{{ $user->designation ?? 'N/A' }}</td>
                                                 <td>
-                                                 <div class="form-check form-switch text-center  ">
-                                                    <input type="checkbox"
-                                                        class="form-check-input form-check-primary fs-4"
-                                                        id="user-switch-{{ $user->id }}"
-                                                        {{ $user->status ? 'checked' : '' }}
-                                                        onchange="toggleUserStatus({{ $user->id }}, this)">
-                                                    <label class="form-check-label pt-2" for="user-switch-{{ $user->id }}"></label>
-                                                </div>
-
+                                                    <div class="d-flex align-items-center">
+                                                        <i class="ph ph-envelope me-1"></i> {{ $user->email }}
+                                                    </div>
                                                 </td>
                                                 <td>
-                                                    <a href="{{ route('user.edit', $user->id) }}"
-                                                        class="btn btn-light-success icon-btn b-r-4">
-                                                        <i class="ti ti-edit text-success"></i>
-                                                    </a>
-                                                    <a href="{{ route('user.delete', $user->id) }}"
-                                                        onclick="return confirm('Delete user {{ $user->name }}?')"
-                                                        class="btn btn-light-danger icon-btn b-r-4">
-                                                        <i class="ti ti-trash text-danger"></i>
-                                                    </a>
+                                                    <div class="d-flex align-items-center" style="color: #7cb342;">
+                                                        <i class="ph ph-phone me-1"></i> {{ $user->phone }}
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    @foreach ($user->roles as $role)
+                                                        <span class="badge" style="background-color: #7cb342;">{{ $role->name }}</span>
+                                                    @endforeach
+                                                </td>
+                                                <td>{{ $user->district->district_name ?? 'N/A' }}</td>
+                                                <td>{{ $user->ward_number ?? '-' }}</td>
+                                                <td>{{ $user->gender ?? '-' }}</td>
+                                                <td>
+                                                    <div class="form-check form-switch">
+                                                        <input class="form-check-input status-toggle" type="checkbox"
+                                                            data-id="{{ $user->id }}"
+                                                            {{ $user->status == 1 ? 'checked' : '' }}>
+
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div class="d-flex gap-2">
+                                                        <a href="{{ route('user.edit', $user->id) }}"
+                                                            class="btn btn-sm" style="background-color: #9ccc65; color: #ffffff;">
+                                                            <i class="ph ph-pencil"></i>
+                                                        </a>
+
+                                                        <a href="{{ route('user.delete', $user->id) }}"
+                                                            class="btn btn-sm btn-danger"
+                                                            onclick="return confirm('Are you sure you want to delete this user?');">
+                                                            <i class="ph ph-trash"></i>
+                                                        </a>
+                                                    </div>
                                                 </td>
                                             </tr>
-                                        @endforeach
+                                        @empty
+                                            <tr>
+                                                <td colspan="11" class="text-center text-muted">No Users Found</td>
+                                            </tr>
+                                        @endforelse
                                     </tbody>
                                 </table>
                             </div>
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>
     </main>
 
-<script>
-    function toggleUserStatus(userId, checkbox) {
-        const status = checkbox.checked ? 1 : 0;
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('.status-toggle').change(function() {
+                var status = $(this).prop('checked') ? 1 : 0;
+                var userId = $(this).data('id');
+                var label = $(this).siblings('label');
 
-        $.ajax({
-            url: `/users/update-status/${userId}`,
-            method: 'POST',
-            data: {
-                status: status,
-                _token: '{{ csrf_token() }}'
-            },
-            success: function (data) {
-                toastr[data.success ? 'success' : 'error'](data.message || 'Status update failed.');
-            },
-            error: function () {
-                toastr.error('Something went wrong.');
-            }
+                $.ajax({
+                    type: "POST",
+                    dataType: "json",
+                    url: "{{ url('admin/update-user-status') }}/" + userId,
+                    data: {
+                        'status': status,
+                        '_token': '{{ csrf_token() }}'
+                    },
+                    success: function(data) {
+                        if (data.success) {
+                            label.text(status ? 'Active' : 'Inactive');
+                            alert(data.message);
+                        }
+                    },
+                    error: function(e) {
+                        console.log(e);
+                        alert('Something went wrong');
+                    }
+                });
+            });
         });
-    }
-</script>
-
+    </script>
 
 @endsection

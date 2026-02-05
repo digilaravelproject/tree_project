@@ -15,16 +15,25 @@ use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\DistrictController;
 use App\Http\Controllers\TahsilController;
 use App\Http\Controllers\KmlController;
+use App\Http\Controllers\LocationController;
+use App\Http\Controllers\MapController;
+use App\Http\Controllers\RazorpayController;
+use App\Http\Controllers\TreePriceController;
 
 Route::get('/generate-hash', function () {
     $password = 'vedantgamechanger18';
     $hashed = Hash::make($password);
     return "Hashed password: " . $hashed;
 });
+Route::get('/linkstorage', function () {
+    Artisan::call('storage:link');
+});
 
 Route::get('/', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.store');;
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+
 
 
 //forget password
@@ -36,7 +45,13 @@ Route::post('admin/verify-otp', [AdminAuthController::class, 'verifyOtp'])->name
 Route::get('admin/reset-password', [AdminAuthController::class, 'showResetPassword'])->name('admin.reset.password.page');
 Route::post('admin/reset-password', [AdminAuthController::class, 'resetPassword'])->name('admin.reset.password');
 
+Route::post('/location/auto-detect', [LocationController::class, 'autoDetect'])->name('location.auto-detect');
+
 Route::middleware(['auth'])->group(function () {
+
+
+    Route::get('razorpay', [RazorpayController::class, 'index']);
+    Route::post('razorpay-payment', [RazorpayController::class, 'store'])->name('razorpay.payment.store');
 
     Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
     Route::post('/roles', [RoleController::class, 'store'])->name('roles.store');
@@ -68,6 +83,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/Profile', [HomeController::class, 'Profile'])->name('profile');
     Route::middleware(['can:project'])->group(function () {
         Route::get('/project/list', [HomeController::class, 'project_list'])->name('project.list');
+        Route::get('/projects/{id}/settings', [HomeController::class, 'settings'])->name('projects.settings');
+        Route::post('/projects/{id}/settings', [HomeController::class, 'updateSettings'])->name('projects.updateSettings');
+        Route::get('/projects/{id}/view-settings', [HomeController::class, 'viewSettings'])->name('projects.viewSettings');
     });
 
     Route::middleware(['can:project.create'])->group(function () {
@@ -98,6 +116,18 @@ Route::middleware(['auth'])->group(function () {
 
     // Route::get('/add/tree', [HomeController::class, 'add_tree'])->name('add.tree');
     Route::middleware(['can:tree_data'])->group(function () {
+
+
+        Route::get('/tree-prices', [TreePriceController::class, 'index'])->name('tree.price.list');
+        Route::get('/tree-prices/create', [TreePriceController::class, 'create'])->name('tree.price.create');
+        Route::post('/tree-prices/store', [TreePriceController::class, 'store'])->name('tree.price.store');
+        Route::post('/tree-prices/active/{id}', [TreePriceController::class, 'makeActive'])->name('tree.price.active');
+        Route::delete('/tree-prices/delete/{id}', [TreePriceController::class, 'destroy'])->name('tree.price.delete');
+
+        Route::get('/tree/add/data', [HomeController::class, 'add_tree_data'])->name('tree.add.data');
+        Route::post('/tree/store/data', [HomeController::class, 'storetree_data'])->name('trees.store');
+        Route::get('/add-multiple', [MapController::class, 'mapGenerator'])->name('tree.add.data.multiple');
+
         Route::get('/List/tree', [HomeController::class, 'tree_list'])->name('tree.list');
         Route::get('/edit/tree/{id}', [HomeController::class, 'edit_tree'])->name('trees.edit');
         Route::put('/trees/update/{tree_id}', [HomeController::class, 'update_tree'])->name('trees.update');
@@ -112,12 +142,19 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/List-trees/{id}', [HomeController::class, 'list_destroy'])->name('list.trees.destroy');
         //kml file create route
         Route::get('/generate-all-kml', [KmlController::class, 'generateAllKml'])->name('generate.all.kml');
+        // Add or ensure these exist inside your auth middleware group
+        Route::get('/tree-list', [HomeController::class, 'tree_list'])->name('tree.list');
+        Route::get('/export-excel', [HomeController::class, 'export_tree_excel'])->name('export.tree.excel');
+        Route::get('/export-pdf', [HomeController::class, 'export_tree_pdf'])->name('export.tree.pdf');
+        Route::get('/export-images-zip', [HomeController::class, 'export_tree_images_zip'])->name('export.tree.zip');
+        Route::get('/subscriptions', [HomeController::class, 'subscription_list'])->name('admin.subscriptions');
     });
     // Route::get('/edit/tree/{id}', [HomeController::class, 'add_tree'])->name('tree.update');
 
 
     Route::middleware(['can:map'])->group(function () {
-        Route::get('/tree/map', [HomeController::class, 'tree_map'])->name('tree.map');
+        // Route::get('/tree/map', [HomeController::class, 'tree_map'])->name('tree.map');
+        Route::get('/tree/map', [MapController::class, 'tree_map'])->name('tree.map');
     });
     Route::get('/Distribution/Tracking', [HomeController::class, 'Distribution_Tracking'])->name('distribution.tracking');
     Route::middleware(['can:master'])->group(function () {
