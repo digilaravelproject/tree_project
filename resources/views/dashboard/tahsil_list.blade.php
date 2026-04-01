@@ -30,7 +30,7 @@
             </div>
             <div class="col-md-2">
                 <a href="{{ route('tahsil.export', ['state_id' => $state_id, 'district_id' => $district_id]) }}"
-                    class="btn btn-success w-100">
+                    class="btn w-100" style="background-color: #7cb342; color: #ffffff;">
                     Excel
                 </a>
             </div>
@@ -39,7 +39,7 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between">
                 <h5>Taluka List</h5>
-                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTahsilModal">+ Add
+                <button class="btn" style="background-color: #7cb342; color: #ffffff;" data-bs-toggle="modal" data-bs-target="#addTahsilModal">+ Add
                     Taluka</button>
             </div>
             <div class="card-body">
@@ -62,7 +62,7 @@
                                 <td>{{ $tahsil->state->state_name ?? 'N/A' }}</td>
                                 <td>
                                     <a href="{{ route('tahsil.edit', $tahsil->id) }}"
-                                        class="btn btn-sm btn-warning">Edit</a>
+                                        class="btn btn-sm" style="background-color: #9ccc65; color: #ffffff;">Edit</a>
 
 
                                     <form action="{{ route('tahsil.destroy', $tahsil->id) }}" method="POST"
@@ -122,7 +122,7 @@
                                         </div>
                                         <div class="modal-footer">
                                             <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                            <button type="submit" class="btn btn-success">Update</button>
+                                            <button type="submit" class="btn" style="background-color: #7cb342; color: #ffffff;">Update</button>
                                         </div>
                                     </form>
                                 </div>
@@ -174,7 +174,7 @@
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-success">Save</button>
+                    <button type="submit" class="btn" style="background-color: #7cb342; color: #ffffff;">Save</button>
                 </div>
             </form>
         </div>

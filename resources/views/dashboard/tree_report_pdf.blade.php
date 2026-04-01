@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html>
-
 <head>
     <meta charset="utf-8">
     <title>{{ $page_title }}</title>
@@ -9,31 +8,28 @@
             font-family: DejaVu Sans, sans-serif;
             font-size: 12px;
         }
-
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
         }
-
         th,
         td {
             border: 1px solid #000;
             padding: 6px;
             text-align: left;
         }
-
         th {
-            background: #f0f0f0;
+            background: #7cb342;
+            color: #ffffff;
         }
-
         h2 {
             text-align: center;
             margin-bottom: 10px;
+            color: #558b2f;
         }
     </style>
 </head>
-
 <body>
     <h2>{{ $page_title }}</h2>
     <table>
@@ -69,11 +65,10 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="10" class="text-center text-muted">No trees found</td>
+                    <td colspan="11" class="text-center text-muted">No trees found</td>
                 </tr>
             @endforelse
         </tbody>
     </table>
 </body>
-
 </html>

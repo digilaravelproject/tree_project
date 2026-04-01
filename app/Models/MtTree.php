@@ -34,6 +34,7 @@ class MtTree extends Model
         'all_captured_images',
         'latitude',
         'longitude',
+        'payment',
         'datetime',
     ];
 
@@ -60,4 +61,13 @@ class MtTree extends Model
     {
         return $this->belongsTo(Family::class, 'family', 'id');
     }
+    public function family()
+    {
+        return $this->belongsTo(Family::class, 'family');
+    }
+    
+    public function treeDetail() {
+    // Ye 'tree_name' (ID: 3) ko trees table ki 'id' se match karega
+    return $this->belongsTo(Tree::class, 'tree_name', 'id');
+}
 }

@@ -12,93 +12,189 @@ use DOMDocument;
 
 class KmlController extends Controller
 {
-    public function generateAllKml()
+    public function generateAllKml(Request $request)
     {
-        // Fetch all trees
-        $trees = MtTree::all();
+        // 1. Apply Filters (Same as Tree List)
+        $query = MtTree::query();
 
-        if ($trees->isEmpty()) {
-            return response()->json(['message' => 'No tree data found'], 404);
+        if ($request->filled('project_id')) {
+            $query->where('project_id', $request->project_id);
         }
 
-        // 👇 Change this base URL to your domain or localhost as needed
-        $baseUrl = 'https://darkorange-baboon-922736.hostingersite.com/public/';
+        if ($request->filled('tree_no')) {
+            $query->where('tree_no', 'like', '%' . $request->tree_no . '%');
+        }
 
-        // Create XML structure
+        if ($request->filled('from_date') && $request->filled('to_date')) {
+            $query->whereBetween('created_at', [
+                $request->from_date . ' 00:00:00', 
+                $request->to_date . ' 23:59:59'
+            ]);
+        }
+
+        $trees = $query->get();
+
+        if ($trees->isEmpty()) {
+            return redirect()->back()->with('error', 'No tree data found for selected filters.');
+        }
+
+        // Base URL for images
+        $baseUrl = url('/');
+        $schemaId = "All_Trees_Schema";
+        $styleId = "tree_icon_style"; // ID for the icon style
+
+        // Initialize DOM
         $dom = new DOMDocument('1.0', 'UTF-8');
         $dom->formatOutput = true;
 
+        // KML Root
         $kml = $dom->createElement('kml');
         $kml->setAttribute('xmlns', 'http://www.opengis.net/kml/2.2');
-        $document = $dom->createElement('Document');
-        $kml->appendChild($document);
         $dom->appendChild($kml);
 
-        foreach ($trees as $tree) {
+        // Document
+        $document = $dom->createElement('Document');
+        $kml->appendChild($document);
 
-            // Get related names
+        // Name
+        $docName = $dom->createElement('name', 'Tree Data Export');
+        $document->appendChild($docName);
+
+        // ==========================================
+        // ✅ ADD CUSTOM TREE ICON STYLE HERE
+        // ==========================================
+        $style = $dom->createElement('Style');
+        $style->setAttribute('id', $styleId);
+
+        $iconStyle = $dom->createElement('IconStyle');
+        
+        // Scale (Icon size, 1.1 is slightly larger)
+        $scale = $dom->createElement('scale', '1.1');
+        $iconStyle->appendChild($scale);
+
+        // Icon Link (Google Earth Standard Green Tree Icon)
+        $icon = $dom->createElement('Icon');
+        $href = $dom->createElement('href', 'http://maps.google.com/mapfiles/kml/pal2/icon4.png'); 
+        $icon->appendChild($href);
+        
+        $iconStyle->appendChild($icon);
+        $style->appendChild($iconStyle);
+
+        // ✅ NEW ADDITION: LabelStyle to hide the text next to the icon on the map (scale = 0)
+        $labelStyle = $dom->createElement('LabelStyle');
+        $labelScale = $dom->createElement('scale', '0'); // 0 means hide text
+        $labelStyle->appendChild($labelScale);
+        $style->appendChild($labelStyle);
+
+        $document->appendChild($style);
+        // ==========================================
+
+        // DEFINE SCHEMA
+        $schema = $dom->createElement('Schema');
+        $schema->setAttribute('name', 'All Trees Data');
+        $schema->setAttribute('id', $schemaId);
+
+        // Fields Definition
+        $fields = [
+            'Project_Name' => 'string',
+            'Tree_No' => 'string',
+            'Ward_Plot_No' => 'string',
+            'Tree_Name' => 'string',
+            'Scientific_Name' => 'string',
+            'Family' => 'string',
+            'Girth' => 'string',
+            'Height' => 'string',
+            'Canopy' => 'string',
+            'Condition' => 'string',
+            'Address' => 'string',
+            'Image_Path' => 'string',
+        ];
+
+        foreach ($fields as $fieldName => $type) {
+            $simpleField = $dom->createElement('SimpleField');
+            $simpleField->setAttribute('name', $fieldName);
+            $simpleField->setAttribute('type', $type);
+            $displayName = $dom->createElement('displayName', str_replace('_', ' ', $fieldName));
+            $simpleField->appendChild($displayName);
+            $schema->appendChild($simpleField);
+        }
+        $document->appendChild($schema);
+
+        // LOOP DATA
+        foreach ($trees as $tree) {
             $project = Project::find($tree->project_id);
             $treeName = Tree::find($tree->tree_name);
             $scientific = ScientificName::find($tree->scientific_name);
             $family = Family::find($tree->family);
 
             $project_name = $project->project_name ?? 'N/A';
-            $tree_name = $treeName->name ?? 'N/A';
-            $scientific_name = $scientific->scientific_name ?? 'N/A';
-            $family_name = $family->family_name ?? 'N/A';
+            $tree_name = $treeName->name ?? $tree->tree_name ?? 'N/A';
+            $scientific_name = $scientific->scientific_name ?? $tree->scientific_name ?? 'N/A';
+            $family_name = $family->family_name ?? $tree->family ?? 'N/A';
 
-            // Decode images
-            $images = [];
+            // Process Images
+            $imageUrls = [];
+            $imgHtml = "";
             if (!empty($tree->all_captured_images)) {
                 $decoded = json_decode($tree->all_captured_images, true);
                 if (is_array($decoded)) {
                     foreach ($decoded as $imgPath) {
-                        $images[] = $baseUrl . str_replace('\/', '/', $imgPath);
+                        $path = str_replace('\\', '/', $imgPath);
+                        $fullUrl = rtrim($baseUrl, '/') . '/' . ltrim($path, '/');
+                        $imageUrls[] = $fullUrl;
+                        $imgHtml .= "<br/><br/><a href='{$fullUrl}'><img src='{$fullUrl}' width='300' /></a>";
                     }
                 }
             }
+            $imagePathString = implode(', ', $imageUrls);
 
-            // Build Placemark
+            // Placemark
             $placemark = $dom->createElement('Placemark');
-            $placemark->appendChild($dom->createElement('name', "Tree No: {$tree->tree_no} ({$project_name})"));
 
-            // Image HTML
-            $imgHtml = '';
-            if (count($images) > 0) {
-                foreach ($images as $img) {
-                    $imgHtml .= "<br/><img src='{$img}' width='300'/>";
-                }
+            // ✅ LINK PLACEMARK TO ICON STYLE
+            $styleUrl = $dom->createElement('styleUrl', '#' . $styleId);
+            $placemark->appendChild($styleUrl);
+
+            // Is name tag ki wajah se sidebar aur popup me naam dikhega, 
+            // par LabelStyle scale 0 ki wajah se map par nahi dikhega.
+            $nameNode = $dom->createElement('name', "Tree " . $tree->tree_no);
+            $placemark->appendChild($nameNode);
+
+            if (!empty($imgHtml)) {
+                $description = $dom->createElement('description');
+                $description->appendChild($dom->createCDATASection($imgHtml));
+                $placemark->appendChild($description);
             }
 
-            // 🧭 Description with coordinates added
-            $desc = "
-                <b>Project Name:</b> {$project_name}<br/>
-                <b>Ward Plot No:</b> {$tree->ward_plot_no}<br/>
-                <b>Tree No:</b> {$tree->tree_no}<br/>
-                <b>Tree Name:</b> {$tree_name}<br/>
-                <b>Scientific Name:</b> {$scientific_name}<br/>
-                <b>Family:</b> {$family_name}<br/>
-                <b>Girth:</b> {$tree->girth} cm<br/>
-                <b>Height:</b> {$tree->height} m<br/>
-                <b>Canopy:</b> {$tree->canopy} m<br/>
-                <b>Age:</b> {$tree->age} years<br/>
-                <b>Condition:</b> {$tree->condition}<br/>
-                <b>Address:</b> {$tree->address}<br/>
-                <b>Landmark:</b> {$tree->landmark}<br/>
-                <b>Ownership:</b> {$tree->ownership}<br/>
-                <b>Concern Person:</b> {$tree->concern_person}<br/>
-                <b>Remark:</b> {$tree->remark}<br/>
-                <b>Latitude:</b> {$tree->latitude}<br/>
-                <b>Longitude:</b> {$tree->longitude}<br/>
-                <b>Date/Time:</b> {$tree->datetime}<br/>
-                {$imgHtml}
-            ";
+            // Extended Data
+            $extendedData = $dom->createElement('ExtendedData');
+            $schemaData = $dom->createElement('SchemaData');
+            $schemaData->setAttribute('schemaUrl', '#' . $schemaId);
 
-            $description = $dom->createElement('description', '');
-            $description->appendChild($dom->createCDATASection($desc));
-            $placemark->appendChild($description);
+            $addData = function ($name, $val) use ($dom, $schemaData) {
+                $val = $val ?? '';
+                $simpleData = $dom->createElement('SimpleData', htmlspecialchars($val));
+                $simpleData->setAttribute('name', $name);
+                $schemaData->appendChild($simpleData);
+            };
 
-            // Coordinates for marker
+            $addData('Project_Name', $project_name);
+            $addData('Tree_No', $tree->tree_no);
+            $addData('Ward_Plot_No', $tree->ward_plot_no);
+            $addData('Tree_Name', $tree_name);
+            $addData('Scientific_Name', $scientific_name);
+            $addData('Family', $family_name);
+            $addData('Girth', $tree->girth);
+            $addData('Height', $tree->height);
+            $addData('Canopy', $tree->canopy);
+            $addData('Condition', $tree->condition);
+            $addData('Address', $tree->address);
+            $addData('Image_Path', $imagePathString);
+
+            $extendedData->appendChild($schemaData);
+            $placemark->appendChild($extendedData);
+
+            // Coordinates
             if (!empty($tree->latitude) && !empty($tree->longitude)) {
                 $point = $dom->createElement('Point');
                 $coordinates = $dom->createElement('coordinates', "{$tree->longitude},{$tree->latitude},0");
@@ -109,14 +205,16 @@ class KmlController extends Controller
             $document->appendChild($placemark);
         }
 
-        // Save to file
-        $filename = 'all_projects_trees.kml';
+        // Save & Download
+        $filename = 'filtered_trees_' . time() . '.kml';
+        if (!file_exists(storage_path("app/public"))) {
+            mkdir(storage_path("app/public"), 0755, true);
+        }
         $filePath = storage_path("app/public/{$filename}");
         $dom->save($filePath);
 
-        // Download response
         return response()->download($filePath, $filename, [
             'Content-Type' => 'application/vnd.google-earth.kml+xml',
-        ]);
+        ])->deleteFileAfterSend(true);
     }
 }

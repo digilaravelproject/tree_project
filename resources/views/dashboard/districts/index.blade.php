@@ -27,7 +27,7 @@
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <a href="{{ route('district.export', ['state_id' => $state_id]) }}" class="btn btn-success w-100">
+                    <a href="{{ route('district.export', ['state_id' => $state_id]) }}" class="btn w-100" style="background-color: #7cb342; color: #ffffff;">
                         Excel
                     </a>
                 </div>
@@ -37,7 +37,7 @@
             <div class="row">
                 <div class="col-12">
                     <div class="card">
-                        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                        <div class="card-header text-white d-flex justify-content-between align-items-center" style="background-color: #7cb342;">
                             <h5 class="mb-0">All Districts</h5>
                             <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#addDistrictModal">
                                 + Add District
@@ -62,10 +62,11 @@
                                                 <td>{{ $district->district_name ?? '-' }}</td>
                                                 <td>{{ $district->state->state_name ?? '-' }}</td>
                                                 <td>
-                                                    <a href="#" class="btn btn-light-success icon-btn b-r-4"
+                                                    <a href="#" class="btn icon-btn b-r-4"
+                                                        style="background-color: rgba(124, 179, 66, 0.1);"
                                                         data-bs-toggle="modal"
                                                         data-bs-target="#editDistrictModal{{ $district->id }}">
-                                                        <i class="ti ti-edit text-success"></i>
+                                                        <i class="ti ti-edit" style="color: #7cb342;"></i>
                                                     </a>
 
                                                     <form action="{{ route('district.destroy', $district->id) }}"
@@ -115,7 +116,7 @@
                                                             <div class="modal-footer">
                                                                 <button class="btn btn-secondary"
                                                                     data-bs-dismiss="modal">Cancel</button>
-                                                                <button type="submit" class="btn btn-success">Update</button>
+                                                                <button type="submit" class="btn" style="background-color: #7cb342; color: #ffffff;">Update</button>
                                                             </div>
                                                         </form>
                                                     </div>
@@ -156,7 +157,7 @@
                     </div>
                     <div class="modal-footer">
                         <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Save</button>
+                        <button type="submit" class="btn" style="background-color: #7cb342; color: #ffffff;">Save</button>
                     </div>
                 </form>
             </div>

@@ -1,245 +1,376 @@
 @extends('layouts.app')
+
 @section('title')
     | {{ $page_title }}
 @endsection
 
 @section('content')
-    <!-- Body main section starts -->
-    <main>
-        <div class="container-fluid">
-
-            <!-- Breadcrumb start -->
-            <div class="row m-1">
-                <div class="col-12">
-                    <h4 class="main-title mb-3">🌳 Tree Location Map</h4>
-                    <p class="text-muted">Track and monitor all planted trees across projects</p>
-                </div>
-            </div>
-
-            <!-- Stats Cards -->
-            <div class="row mb-3">
-                <div class="col-md-4">
-                    <div class="card">
-                        <div class="card-body text-center">
-                            <h3 class="text-primary" style="font-size: 32px;">{{ count($trees) }}</h3>
-                            <p class="text-muted mb-0">Total Trees Mapped</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card">
-                        <div class="card-body text-center">
-                            <h3 class="text-primary" style="font-size: 32px;">{{ $trees->unique('project_id')->count() }}
-                            </h3>
-                            <p class="text-muted mb-0">Active Projects</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card">
-                        <div class="card-body text-center">
-                            <h3 class="text-primary" style="font-size: 32px;">100%</h3>
-                            <p class="text-muted mb-0">Location Coverage</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Map Container -->
-            <div class="row mb-3">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-body p-0">
-                            <div id="map" style="width: 100%; height: 600px;"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Tree List -->
-            <div class="row">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title mb-3">📍 Tree Locations</h5>
-                            <div style="max-height: 400px; overflow-y: auto;">
-                                @foreach ($trees as $tree)
-                                    <div class="tree-item p-3 border-bottom"
-                                        style="cursor: pointer; transition: background 0.3s;"
-                                        onclick="focusOnTree({{ $tree->latitude }}, {{ $tree->longitude }}, {{ $tree->id }})"
-                                        onmouseover="this.style.background='#f8f9fa'"
-                                        onmouseout="this.style.background='white'">
-                                        <div style="font-weight: 600; color: #333; margin-bottom: 4px;">
-                                            🌲 {{ $tree->tree_name }}
-                                        </div>
-                                        <div style="font-size: 13px; color: #666;">
-                                            {{ $tree->address ?? 'No address provided' }}
-                                        </div>
-                                    </div>
-                                @endforeach
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-    </main>
-    <!-- Body main section ends -->
-
     <style>
-        .gm-style-iw-d {
-            overflow: auto !important;
+        .filter-label {
+            font-weight: 600;
+            font-size: 13px;
+            margin-bottom: 5px;
+            color: #333;
         }
 
-        .info-window h5 {
-            color: #667eea;
-            margin-bottom: 8px;
-        }
-
-        .info-window p {
-            margin: 5px 0;
+        .form-control,
+        .form-select {
+            border-radius: 4px;
+            border: 1px solid #ddd;
             font-size: 14px;
+        }
+
+        /* Custom Info Window Style */
+        .gm-style-iw {
+            padding: 0 !important;
+            border-radius: 8px !important;
+            overflow: hidden !important;
+        }
+
+        .tree-info-window {
+            width: 350px;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        .tree-img-container {
+            width: 100%;
+            height: 150px;
+            background-color: #f0f0f0;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .tree-img-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .tree-details {
+            padding: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .tree-row {
+            display: flex;
+            border-bottom: 1px solid #eee;
+            padding: 6px 0;
+            font-size: 13px;
+        }
+
+        .tree-row:last-child {
+            border-bottom: none;
+        }
+
+        .tree-label {
+            width: 40%;
+            font-weight: bold;
             color: #555;
         }
 
-        .info-window strong {
+        .tree-val {
+            width: 60%;
             color: #333;
         }
     </style>
 
+    <main>
+        <div class="container-fluid">
+            <div class="row m-1">
+                <div class="col-12">
+                    <h4 class="main-title mb-3">🌳 Tree Location Map</h4>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <form id="filterForm">
+                                <div class="row">
+                                    <div class="col-md-3 mb-2">
+                                        <label class="filter-label">Select Project</label>
+                                        <select class="form-select" name="project_id" id="project_id">
+                                            <option value="">Select Project</option>
+                                            @foreach ($projects as $proj)
+                                                <option value="{{ $proj->id }}">{{ $proj->project_name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    {{-- Start/End date filters removed per request --}}
+                                    <div class="col-md-3 mb-2">
+                                        <label class="filter-label">Ward Number</label>
+                                        <select class="form-select" name="ward_plot_no" id="ward_plot_no">
+                                            <option value="">Select Ward</option>
+                                            @foreach ($wards as $ward)
+                                                <option value="{{ $ward }}">{{ $ward }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3 mb-2">
+                                        <label class="filter-label">Tree Number</label>
+                                        <input type="text" class="form-control" name="tree_no" id="tree_no"
+                                            placeholder="Enter Tree No">
+                                    </div>
+                                    <div class="col-md-3 mb-2">
+                                        <label class="filter-label">Ownership</label>
+                                        <select class="form-select" name="ownership" id="ownership">
+                                            <option value="">Select Ownership</option>
+                                            @foreach ($ownerships as $own)
+                                                <option value="{{ $own }}">{{ $own }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3 mb-2 d-flex align-items-end">
+                                        <button type="button" class="btn w-100" style="background-color: #7cb342; color: #ffffff;" id="btn-get-data"
+                                            onclick="loadMapData()">
+                                            <i class="fa fa-filter"></i> Get Data
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-12 text-end">
+                    <span class="badge fs-6" style="background-color: #7cb342;">Total Trees Found: <span id="tree-count">0</span></span>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body p-0">
+                            <div id="map" style="width: 100%; height: 600px; border-radius: 4px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://maps.googleapis.com/maps/api/js?key={{ env('GOOGLE_MAPS_API_KEY') }}&callback=initMap" async defer>
+    </script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
     <script>
         let map;
         let markers = [];
-        let infoWindows = [];
+        let infoWindow;
 
-        // Trees data from Laravel
-        const trees = @json($trees);
-        const geocoder = new google.maps.Geocoder();
+        $(document).ready(function() {
+            // Document ready - no date filters used
+        });
 
         function initMap() {
             const defaultCenter = {
-                lat: 26.8467,
-                lng: 80.9462
+                lat: 20.5937,
+                lng: 78.9629
+            }; // India
+            map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 5,
+                center: defaultCenter,
+                mapTypeId: 'roadmap',
+                mapTypeControl: true,
+                streetViewControl: false
+            });
+            infoWindow = new google.maps.InfoWindow();
+        }
+
+        function loadMapData() {
+            // Get current map bounds - always available after map init
+            let bounds = map.getBounds();
+            
+            // If bounds don't exist (shouldn't happen), use map center with a default radius
+            if (!bounds) {
+                const center = map.getCenter();
+                bounds = new google.maps.LatLngBounds(
+                    new google.maps.LatLng(center.lat() - 5, center.lng() - 5),
+                    new google.maps.LatLng(center.lat() + 5, center.lng() + 5)
+                );
+            }
+
+            const ne = bounds.getNorthEast();
+            const sw = bounds.getSouthWest();
+
+            const formData = {
+                project_id: $('#project_id').val(),
+                ward_plot_no: $('#ward_plot_no').val(),
+                tree_no: $('#tree_no').val(),
+                girth: $('#girth').val(),
+                ownership: $('#ownership').val(),
+                // Map bounds (always send these)
+                north_lat: ne.lat(),
+                south_lat: sw.lat(),
+                east_lng: ne.lng(),
+                west_lng: sw.lng()
             };
 
-            map = new google.maps.Map(document.getElementById('map'), {
-                zoom: 12,
-                center: trees.length > 0 ? {
-                    lat: parseFloat(trees[0].latitude),
-                    lng: parseFloat(trees[0].longitude)
-                } : defaultCenter,
-                mapTypeId: 'roadmap',
-                styles: [{
-                    featureType: "poi",
-                    elementType: "labels",
-                    stylers: [{
-                        visibility: "off"
-                    }]
-                }]
-            });
+            $('#btn-get-data').html('<i class="fa fa-spinner fa-spin"></i> Loading...').prop('disabled', true);
 
-            const coordinateCount = {};
-
-            // Add markers for each tree
-            trees.forEach((tree, index) => {
-                let lat = parseFloat(tree.latitude);
-                let lng = parseFloat(tree.longitude);
-                const coordKey = `${lat},${lng}`;
-
-                // Offset slightly if another tree has same coordinates
-                if (coordinateCount[coordKey]) {
-                    const offset = coordinateCount[coordKey] * 0.00005;
-                    lat = lat + offset;
-                    lng = lng + offset;
-                    coordinateCount[coordKey]++;
-                } else {
-                    coordinateCount[coordKey] = 1;
+            $.ajax({
+                url: "{{ route('tree.map') }}",
+                type: "GET",
+                data: formData,
+                dataType: "json",
+                success: function(response) {
+                    if (response.success) {
+                        $('#tree-count').text(response.count);
+                        updateMapMarkers(response.trees);
+                    } else {
+                        alert('Error fetching data');
+                    }
+                },
+                error: function(xhr) {
+                    console.error(xhr);
+                    alert('Error fetching tree data.');
+                },
+                complete: function() {
+                    $('#btn-get-data').html('<i class="fa fa-filter"></i> Get Data').prop('disabled', false);
                 }
-
-                const position = {
-                    lat,
-                    lng
-                };
-
-                const marker = new google.maps.Marker({
-                    position: position,
-                    map: map,
-                    title: tree.tree_name,
-                    icon: {
-                        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 384 512">
-                                <path fill="#EA4335" d="M172.268 501.67C26.97 291.031 0 269.413 0 192 
-                                0 85.961 85.961 0 192 0s192 85.961 192 192c0 77.413-26.97 
-                                99.031-172.268 309.67-9.535 13.774-29.93 
-                                13.773-39.464 0zM192 272c44.183 0 80-35.817 
-                                80-80s-35.817-80-80-80-80 35.817-80 
-                                80 35.817 80 80 80z"/>
-                            </svg>
-                        `),
-                        scaledSize: new google.maps.Size(38, 48),
-                        anchor: new google.maps.Point(19, 48)
-                    },
-                    animation: google.maps.Animation.DROP
-                });
-
-                // Simple info window
-                const infoWindow = new google.maps.InfoWindow({
-                    content: `
-                        <div class="info-window" style="padding: 12px; min-width: 280px;">
-                            <h5 style="color: #EA4335; margin-bottom: 12px; font-size: 17px; font-weight: 600;">
-                                🌳 ${tree.tree_name}
-                            </h5>
-                            <p style="margin: 6px 0; font-size: 13px; color: #555;">
-                                <strong style="color: #333;">🆔 Tree ID:</strong> #${tree.id}
-                            </p>
-                            <p style="margin: 6px 0; font-size: 13px; color: #555;">
-                                <strong style="color: #333;">📍 Address:</strong> ${tree.address || 'Address not available'}
-                            </p>
-                            <p style="margin: 6px 0; font-size: 12px; color: #999;">
-                                <strong>Coordinates:</strong> ${lat}, ${lng}
-                            </p>
-                        </div>
-                    `,
-                    maxWidth: 350
-                });
-
-                marker.addListener('click', () => {
-                    infoWindows.forEach(iw => iw && iw.close());
-                    infoWindow.open(map, marker);
-                });
-
-                markers.push(marker);
-                infoWindows.push(infoWindow);
             });
-
-            // Fit map to show all markers
-            if (trees.length > 0) {
-                const bounds = new google.maps.LatLngBounds();
-                markers.forEach(marker => bounds.extend(marker.getPosition()));
-                map.fitBounds(bounds);
-            }
         }
 
-        function focusOnTree(lat, lng, treeId) {
-            const markerIndex = trees.findIndex(t => t.id === treeId);
-            if (markerIndex !== -1) {
-                const position = markers[markerIndex].getPosition();
-                map.setCenter(position);
-                map.setZoom(16);
-                infoWindows.forEach(iw => iw.close());
-                infoWindows[markerIndex].open(map, markers[markerIndex]);
-                markers[markerIndex].setAnimation(google.maps.Animation.BOUNCE);
-                setTimeout(() => markers[markerIndex].setAnimation(null), 2000);
+        function updateMapMarkers(trees) {
+            clearMarkers();
+            if (trees.length === 0) {
+                alert("No trees found for the selected filters in this zoomed area.");
+                return;
             }
+
+            trees.forEach(tree => {
+                const lat = parseFloat(tree.latitude);
+                const lng = parseFloat(tree.longitude);
+
+                if (!isNaN(lat) && !isNaN(lng)) {
+                    const position = {
+                        lat: lat,
+                        lng: lng
+                    };
+                    const marker = new google.maps.Marker({
+                        position: position,
+                        map: map,
+                        animation: google.maps.Animation.DROP
+                    });
+
+                    marker.addListener('click', () => {
+                        showTreeDetails(tree, marker);
+                    });
+
+                    markers.push(marker);
+                }
+            });
+            
+            // Do NOT call fitBounds - keep the current map view
         }
 
-        window.onload = function() {
-            initMap();
-        };
-    </script>
+        function clearMarkers() {
+            markers.forEach(m => m.setMap(null));
+            markers = [];
+        }
 
-    <!-- Google Maps API -->
-    <script src="https://maps.googleapis.com/maps/api/js?key={{ env('GOOGLE_MAPS_API_KEY') }}&callback=initMap" async defer>
+        function showTreeDetails(tree, marker) {
+            const content = generateInfoWindowContent(tree);
+            infoWindow.setContent(content);
+            infoWindow.open(map, marker);
+        }
+
+        function generateInfoWindowContent(tree) {
+            let imageUrl = '';
+            try {
+                if (tree.all_captured_images) {
+                    const images = JSON.parse(tree.all_captured_images);
+                    if (images.length > 0) {
+                        imageUrl = "{{ asset('') }}" + images[0];
+                    }
+                }
+            } catch (e) {
+                console.error("Image error", e);
+            }
+
+            const imgHtml = imageUrl ?
+                `<img src="${imageUrl}" alt="Tree Image">` :
+                `<span class="text-muted" style="color:#aaa;">No Image</span>`;
+
+            const createdDate = new Date(tree.created_at).toLocaleDateString();
+
+            const projectName = tree.project ? tree.project.project_name : '-';
+            const treeName = tree.tree ? tree.tree.name : (tree.tree_id || '-');
+            const scientificName = tree.scientific ? tree.scientific.scientific_name : '-';
+            const familyName = tree.family ? tree.family.family_name : '-';
+
+            return `
+                <div class="tree-info-window">
+                    <div class="tree-img-container">${imgHtml}</div>
+                    <div class="tree-details">
+                        <div class="tree-row">
+                            <div class="tree-label">Tree Number</div>
+                            <div class="tree-val">${tree.tree_no || '-'}</div>
+                        </div>
+                        <div class="tree-row">
+                            <div class="tree-label">Tree Name</div>
+                            <div class="tree-val"><b>${treeName}</b></div>
+                        </div>
+                        <div class="tree-row">
+                            <div class="tree-label">Scientific Name</div>
+                            <div class="tree-val"><i>${scientificName}</i></div>
+                        </div>
+                        <div class="tree-row">
+                            <div class="tree-label">Family</div>
+                            <div class="tree-val">${familyName}</div>
+                        </div>
+                        <div class="tree-row">
+                            <div class="tree-label">Project</div>
+                            <div class="tree-val">${projectName}</div>
+                        </div>
+                        <div class="tree-row">
+                            <div class="tree-label">Address</div>
+                            <div class="tree-val">${tree.address || '-'}</div>
+                        </div>
+                        <div class="tree-row">
+                            <div class="tree-label">Girth</div>
+                            <div class="tree-val">${tree.girth ? tree.girth + ' cm' : '-'}</div>
+                        </div>
+                        <div class="tree-row">
+                            <div class="tree-label">Height</div>
+                            <div class="tree-val">${tree.height ? tree.height + ' m' : '-'}</div>
+                        </div>
+                        <div class="tree-row">
+                            <div class="tree-label">Canopy</div>
+                            <div class="tree-val">${tree.canopy ? tree.canopy + ' m' : '-'}</div>
+                        </div>
+                        <div class="tree-row">
+                            <div class="tree-label">Age</div>
+                            <div class="tree-val">${tree.age ? tree.age + ' Years' : '-'}</div>
+                        </div>
+                        <div class="tree-row">
+                            <div class="tree-label">Condition</div>
+                            <div class="tree-val">${tree.condition || '-'}</div>
+                        </div>
+                        <div class="tree-row">
+                            <div class="tree-label">Ownership</div>
+                            <div class="tree-val">${tree.ownership || '-'}</div>
+                        </div>
+                        <div class="tree-row">
+                            <div class="tree-label">Landmark</div>
+                            <div class="tree-val">${tree.landmark || '-'}</div>
+                        </div>
+                        <div class="tree-row">
+                            <div class="tree-label">Date</div>
+                            <div class="tree-val">${createdDate}</div>
+                        </div>
+                        <div class="tree-row" style="background:#f9f9f9; border:none; margin-top:5px; font-size:11px;">
+                            <div class="tree-val" style="width:100%; color:#999;">Lat: ${tree.latitude}, Lng: ${tree.longitude}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
     </script>
 @endsection

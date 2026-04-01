@@ -11,12 +11,13 @@ class Project extends Model
     use HasFactory;
 
     protected $fillable = [
+        'extra_user',
         'project_name',
         'state_id',
         'client_name',
         'company_name',
         'field_officer_id',
-        'limit', // ✅ new column added
+        'ward_no', // ✅ new column added
     ];
 
     public function state()
@@ -33,4 +34,18 @@ class Project extends Model
     {
         return $this->hasOne(MtTree::class, 'project_id');
     }
+    public function settings()
+    {
+        return $this->hasMany(ProjectSetting::class, 'project_id');
+    }
+    public function getSettingVal($key, $column)
+    {
+        $setting = $this->settings->where('field_key', $key)->first();
+        return $setting ? $setting->$column : null;
+    }
+    public function trees()
+    {
+        return $this->hasMany(MtTree::class, 'project_id', 'id');
+    }
+
 }

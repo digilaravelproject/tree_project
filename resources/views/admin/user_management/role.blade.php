@@ -24,7 +24,7 @@
                     <div class="card ">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <h4 class="mb-0">User Roles</h4>
-                            <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#createRoleModal">
+                            <button class="btn btn-sm" style="background-color: #7cb342; color: #ffffff;" data-bs-toggle="modal" data-bs-target="#createRoleModal">
                                 Create Role
                             </button>
                         </div>
@@ -44,10 +44,11 @@
                                                 <td>{{ $index + 1 }}</td>
                                                 <td>{{ $role->name }}</td>
                                                 <td>
-                                                    <a href="#" class="btn btn-light-success icon-btn b-r-4 edit-role-btn"
+                                                    <a href="#" class="btn icon-btn b-r-4 edit-role-btn"
+                                                        style="background-color: rgba(124, 179, 66, 0.1);"
                                                         data-role-id="{{ $role->id }}" data-role-name="{{ $role->name }}"
                                                         data-bs-toggle="modal" data-bs-target="#updateRoleModal">
-                                                        <i class="ti ti-edit text-success"></i>
+                                                        <i class="ti ti-edit" style="color: #7cb342;"></i>
                                                     </a>
                                                    <a href="{{ route('roles.delete', $role->id) }}"
                                                         onclick="return confirm('Delete role {{ $role->name }}?')"
@@ -56,7 +57,7 @@
                                                     </a>
                                                     <a href="{{ route('roles.assign.permission', $role->id) }}"
                                                        
-                                                        class="btn btn-sm btn-light-primary b-r-4">
+                                                        class="btn btn-sm b-r-4" style="background-color: rgba(124, 179, 66, 0.1); color: #7cb342;">
                                                         Assign Permission
                                                     </a>
                                                 </td>
@@ -93,7 +94,7 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="submit" class="btn btn-success">Save Role</button>
+                        <button type="submit" class="btn" style="background-color: #7cb342; color: #ffffff;">Save Role</button>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     </div>
                 </div>
@@ -119,7 +120,7 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="submit" class="btn btn-primary">Update</button>
+                        <button type="submit" class="btn" style="background-color: #7cb342; color: #ffffff;">Update</button>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     </div>
                 </div>

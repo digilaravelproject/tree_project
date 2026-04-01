@@ -1,5 +1,5 @@
 <?php
-// app/Http/Controllers/Auth/LoginController.php
+
 
 namespace App\Http\Controllers;
 
@@ -8,11 +8,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use Hash;
+
 class AuthController extends Controller
 {
     public function showLoginForm()
     {
-    //    dd(Hash::make('Test@1234')) ;
+        //    dd(Hash::make('Test@1234')) ;
 
         return view('auth.login');
     }

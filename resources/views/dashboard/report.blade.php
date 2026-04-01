@@ -47,7 +47,7 @@
                             class="form-control">
                     </div>
                     <div class="col-md-6 d-flex gap-2">
-                        <button type="submit" class="btn btn-primary mt-3">Filter</button>
+                        <button type="submit" class="btn mt-3" style="background-color: #7cb342; color: #ffffff;">Filter</button>
                         <button type="submit" name="download_pdf" value="1" class="btn btn-danger mt-3">Download
                             PDF</button>
                         <a href="{{ route('project.report') }}" class="btn btn-secondary mt-3">Reset</a>

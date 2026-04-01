@@ -27,9 +27,6 @@
                                             <th>Tree Name</th>
                                             <th>Scientific Name</th>
                                             <th>Family Name</th>
-                                            <th>Height Ratio</th>
-                                            <th>Age Ratio</th>
-                                            <th>Canopy Ratio</th>
                                             <th>Action</th>
                                         </tr>
                                     </thead>
@@ -40,9 +37,6 @@
                                                 <td>{{ $tree->name ?? '-' }}</td>
                                                 <td>{{ $tree->scientific->scientific_name ?? '-' }}</td>
                                                 <td>{{ $tree->family->family_name ?? '-' }}</td>
-                                                <td>{{ $tree->scientific->height_ratio ?? '-' }}</td>
-                                                <td>{{ $tree->scientific->age_ratio ?? '-' }}</td>
-                                                <td>{{ $tree->scientific->canopy_ratio ?? '-' }}</td>
                                                 <td>
                                                     <a href="{{ route('list.trees.edit', $tree->id) }}"
                                                         class="btn btn-light-success icon-btn b-r-4">

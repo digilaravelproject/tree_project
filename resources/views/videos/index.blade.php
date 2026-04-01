@@ -3,20 +3,18 @@
 @section('content')
     <main class="container py-5">
         <div class="d-flex justify-content-between mb-4">
-            <h4>{{ $page_title }}</h4>
-            <a href="{{ route('videos.create') }}" class="btn btn-primary">Upload Video</a>
+            <h4 style="color: #7cb342;">{{ $page_title }}</h4>
+            <a href="{{ route('videos.create') }}" class="btn btn-primary" style="background-color: #7cb342; border-color: #7cb342;">Upload Video</a>
         </div>
-
-
         <div class="card shadow-sm">
             <div class="card-body table-responsive">
                 <table class="table table-hover table-bordered align-middle">
-                    <thead class="table-light">
+                    <thead style="background-color: #7cb342;">
                         <tr>
-                            <th>Title</th>
-                            <th>Video</th>
-                            <th>Uploaded At</th>
-                            <th class="text-center">Action</th>
+                            <th style="color: white;">Title</th>
+                            <th style="color: white;">Video</th>
+                            <th style="color: white;">Uploaded At</th>
+                            <th class="text-center" style="color: white;">Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -32,7 +30,7 @@
                                 <td>{{ $video->created_at->format('d M, Y H:i') }}</td>
                                 <td class="text-center">
                                     <a href="{{ route('videos.edit', $video->id) }}"
-                                        class="btn btn-sm btn-info me-1">Edit</a>
+                                        class="btn btn-sm btn-info me-1" style="background-color: #7cb342; border-color: #7cb342; color: white;">Edit</a>
                                     <form action="{{ route('videos.destroy', $video->id) }}" method="POST"
                                         class="d-inline">
                                         @csrf

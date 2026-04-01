@@ -84,17 +84,16 @@
                                 </div>
 
 
-                                <!-- ✅ New Limit Field -->
                                 <div class="col-md-6">
-                                    <label for="limit" class="form-label">Limit <span
+                                    <label for="wardNo" class="form-label">Ward No <span
                                             class="text-danger">*</span></label>
-                                    <input type="number" name="limit" class="form-control" id="limit"
-                                        placeholder="Enter project limit" value="{{ old('limit') }}" required>
-                                    <div class="invalid-feedback">Please enter project limit.</div>
+                                    <input type="text" name="ward_no" class="form-control" id="wardNo"
+                                        placeholder="Enter ward number" value="{{ old('ward_no', '10') }}" required>
+                                    <div class="invalid-feedback">Please enter ward number.</div>
                                 </div>
 
                                 <div class="col-12 mt-3">
-                                    <button class="btn btn-success" type="submit">Create Project</button>
+                                    <button class="btn" style="background-color: #7cb342; color: #ffffff;" type="submit">Create Project</button>
                                     <button class="btn btn-secondary" type="reset">Cancel</button>
                                 </div>
                             </form>

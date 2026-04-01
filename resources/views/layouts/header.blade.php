@@ -77,6 +77,14 @@
     <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
 
     <style>
+        * {
+            font-family: 'Cambria', 'Georgia', serif !important;
+        }
+
+        body {
+            font-family: 'Cambria', 'Georgia', serif !important;
+        }
+
         .form-switch .form-check-input {
             margin-left: -1.5em;
         }

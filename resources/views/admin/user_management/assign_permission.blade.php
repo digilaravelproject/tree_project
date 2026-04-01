@@ -38,8 +38,8 @@
                             <div class="row">
                                 <div class="col-12 col-md-3">
                                      <div class="card">
-                                    <div class="card-header">
-                                        <h5>Permissions</h5>
+                                    <div class="card-header" style="background-color: #7cb342; color: white;">
+                                        <h5 style="color: white; margin: 0;">Permissions</h5>
                                     </div>
                                     <div class="card-body">
                                     <div class="vertical-tab setting-tab">
@@ -70,7 +70,7 @@
                                                   }) as $key => $group)
                                             <div class="tab-pane fade {{ $loop->first ? 'show active' : '' }}"
                                                  id="pane-{{ $key }}">
-                                                <h6>{{ ucwords(str_replace('_', ' ', $key)) }}</h6>
+                                                <h6 style="color: #7cb342;">{{ ucwords(str_replace('_', ' ', $key)) }}</h6>
                                                 <hr>
                                                 <div class="row">
                                                     @foreach ($group as $perm)
@@ -99,7 +99,7 @@
 
                         </div>
                         <div class="card-footer text-end">
-                            <button type="submit" class="btn btn-primary">Update Role</button>
+                            <button type="submit" class="btn btn-primary" style="background-color: #7cb342; border-color: #7cb342;">Update Role</button>
                         </div>
                     </div>
                 </form>
@@ -107,4 +107,20 @@
         </div>
     </div>
 </main>
+
+<style>
+.nav-tabs .nav-link.active {
+    background-color: #7cb342 !important;
+    color: white !important;
+}
+
+.nav-tabs .nav-link {
+    color: #7cb342;
+}
+
+.form-check-input:checked {
+    background-color: #7cb342;
+    border-color: #7cb342;
+}
+</style>
 @endsection

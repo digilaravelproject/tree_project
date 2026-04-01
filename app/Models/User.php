@@ -16,6 +16,7 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
     use HasRoles;
     use HasApiTokens;
+
     /**
      * The attributes that are mass assignable.
      *
@@ -24,12 +25,19 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
-        'phone',
+        'phone', // This is your Mobile Number
         'password',
         'role_id',
         'designation',
         'status',
-        'district_id'
+        'district_id',
+        'is_verified',
+        'otp',
+        'aadhaar_number',
+        'address',
+        'projects',
+        'ward_number',
+        'gender'
     ];
 
     /**
@@ -41,6 +49,37 @@ class User extends Authenticatable
         'password',
         'remember_token',
     ];
+    /**
+     * Check if user is a Customer (Role 3)
+     */
+    public function isCustomer()
+    {
+        return $this->role_id === 3;
+    }
+
+    /**
+     * Relationship for Customer Projects (using extra_user)
+     */
+    public function customerProjects()
+    {
+        return $this->hasMany(\App\Models\Project::class, 'extra_user', 'id');
+    }
+
+    /**
+     * Relationship for Customer Trees (using extra_usertree)
+     */
+    public function customerTrees()
+    {
+        return $this->hasMany(\App\Models\MtTree::class, 'extra_usertree', 'id');
+    }
+
+    /**
+     * Relationship for Wallets
+     */
+    public function wallets()
+    {
+        return $this->hasMany(\App\Models\Wallet::class);
+    }
 
     /**
      * Get the attributes that should be cast.

@@ -57,15 +57,17 @@
                             @endforeach
                         </select>
                     </div>
-
-                    <div class="col-md-6 mb-3">
-                        <label>Limit</label>
-                        <input type="number" name="limit" class="form-control"
-                            value="{{ old('limit', $project->limit) }}" required min="1">
-                    </div>
+                      <div class="col-md-6">
+                                    <label for="wardNo" class="form-label">Ward No <span
+                                            class="text-danger">*</span></label>
+                                    <input type="text" name="ward_no" class="form-control" id="wardNo"
+                                        placeholder="Enter ward number" value="{{ old('ward_no', $project->ward_no) }}" required>
+                                    <div class="invalid-feedback">Please enter ward number.</div>
+                                </div>
+                    
                 </div>
 
-                <button type="submit" class="btn btn-primary">Update Project</button>
+                <button type="submit" class="btn" style="background-color: #7cb342; color: #ffffff;">Update Project</button>
             </form>
         </div>
     </main>

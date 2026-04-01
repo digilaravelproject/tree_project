@@ -9,10 +9,10 @@
 
             {{-- Import Excel Section --}}
             <div class="card shadow-sm border-0 mb-4">
-                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <div class="card-header text-white d-flex justify-content-between align-items-center" style="background-color: #7cb342;">
                     <h5 class="mb-0">Import Trees (Excel)</h5>
                     <button type="button" class="btn btn-light btn-sm fw-semibold" id="importBtn">
-                        <i class="fa fa-file-excel me-1 text-success"></i> Import Excel
+                        <i class="fa fa-file-excel me-1" style="color: #7cb342;"></i> Import Excel
                     </button>
                 </div>
                 <div class="card-body">
@@ -30,7 +30,7 @@
 
             {{-- Add New Tree Section --}}
             <div class="card shadow-sm border-0">
-                <div class="card-header bg-success text-white">
+                <div class="card-header text-white" style="background-color: #7cb342;">
                     <h5 class="mb-0">Add New Tree</h5>
                 </div>
                 <div class="card-body px-4 py-4">
@@ -56,26 +56,13 @@
                                     placeholder="Enter family name" required>
                             </div>
 
-                            <div class="col-12 col-sm-6 col-md-6 col-lg-6">
-                                <label class="form-label fw-semibold">Height Ratio</label>
-                                <input type="text" name="height_ratio" class="form-control"
-                                    placeholder="Enter height ratio">
-                            </div>
-
-                            <div class="col-12 col-sm-6 col-md-6 col-lg-6">
-                                <label class="form-label fw-semibold">Age Ratio</label>
-                                <input type="text" name="age_ratio" class="form-control" placeholder="Enter age ratio">
-                            </div>
-
-                            <div class="col-12 col-sm-6 col-md-6 col-lg-6">
-                                <label class="form-label fw-semibold">Canopy Ratio</label>
-                                <input type="text" name="canopy_ratio" class="form-control"
-                                    placeholder="Enter canopy ratio">
-                            </div>
+                            <input type="hidden" name="height_ratio" value="1">
+                            <input type="hidden" name="age_ratio" value="1">
+                            <input type="hidden" name="canopy_ratio" value="1">
                         </div>
 
                         <div class="text-end mt-4">
-                            <button type="submit" class="btn btn-success px-4">Save</button>
+                            <button type="submit" class="btn px-4" style="background-color: #7cb342; color: #ffffff;">Save</button>
                             <a href="" class="btn btn-secondary px-4">Cancel</a>
                         </div>
                     </form>
