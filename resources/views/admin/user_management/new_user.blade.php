@@ -94,7 +94,7 @@
                                     </select>
                                 </div>
 
-                                <?php /*<div class="col-md-6">
+                                <div class="col-md-6">
                                     <label for="district" class="form-label">District <span
                                             class="text-danger">*</span></label>
                                     <select class="form-select" id="district" name="district_id" required>
@@ -107,16 +107,6 @@
                                         @endforeach
                                     </select>
                                     <div class="invalid-feedback">Please select a valid district.</div>
-                                </div> */ ?>
-
-                                <input type="hidden" id="district" name="district_id" value="1">
-
-                                <input type="hidden" id="projects" name="projects" value="1">
-
-                                <div class="col-md-6">
-                                    <label for="aadhaar_number" class="form-label">Aadhaar Number</label>
-                                    <input type="text" class="form-control" id="aadhaar_number" name="aadhaar_number"
-                                        value="{{ old('aadhaar_number', $user->aadhaar_number ?? '') }}">
                                 </div>
 
                                 <div class="col-md-6">
@@ -125,11 +115,17 @@
                                         value="{{ old('ward_number', $user->ward_number ?? '') }}">
                                 </div>
 
-                                <?php /*<div class="col-md-6">
+                                <div class="col-md-6">
+                                    <label for="aadhaar_number" class="form-label">Aadhaar Number</label>
+                                    <input type="text" class="form-control" id="aadhaar_number" name="aadhaar_number"
+                                        value="{{ old('aadhaar_number', $user->aadhaar_number ?? '') }}">
+                                </div>
+
+                                <div class="col-md-6">
                                     <label for="projects" class="form-label">Projects</label>
                                     <input type="text" class="form-control" id="projects" name="projects"
                                         value="{{ old('projects', $user->projects ?? '') }}">
-                                </div> */ ?>
+                                </div>
 
                                 <div class="col-12">
                                     <label for="address" class="form-label">Address</label>

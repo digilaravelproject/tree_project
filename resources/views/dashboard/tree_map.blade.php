@@ -100,7 +100,14 @@
                                             @endforeach
                                         </select>
                                     </div>
-                                    {{-- Start/End date filters removed per request --}}
+                                    <div class="col-md-3 mb-2">
+                                        <label class="filter-label">Start Date</label>
+                                        <input type="date" class="form-control" name="start_date" id="start_date">
+                                    </div>
+                                    <div class="col-md-3 mb-2">
+                                        <label class="filter-label">End Date</label>
+                                        <input type="date" class="form-control" name="end_date" id="end_date">
+                                    </div>
                                     <div class="col-md-3 mb-2">
                                         <label class="filter-label">Ward Number</label>
                                         <select class="form-select" name="ward_plot_no" id="ward_plot_no">
@@ -165,7 +172,15 @@
         let infoWindow;
 
         $(document).ready(function() {
-            // Document ready - no date filters used
+            // Set current date in YYYY-MM-DD format
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const today = `${year}-${month}-${day}`;
+
+            $('#start_date').val(today);
+            $('#end_date').val(today);
         });
 
         function initMap() {
@@ -184,32 +199,14 @@
         }
 
         function loadMapData() {
-            // Get current map bounds - always available after map init
-            let bounds = map.getBounds();
-            
-            // If bounds don't exist (shouldn't happen), use map center with a default radius
-            if (!bounds) {
-                const center = map.getCenter();
-                bounds = new google.maps.LatLngBounds(
-                    new google.maps.LatLng(center.lat() - 5, center.lng() - 5),
-                    new google.maps.LatLng(center.lat() + 5, center.lng() + 5)
-                );
-            }
-
-            const ne = bounds.getNorthEast();
-            const sw = bounds.getSouthWest();
-
             const formData = {
                 project_id: $('#project_id').val(),
+                start_date: $('#start_date').val(),
+                end_date: $('#end_date').val(),
                 ward_plot_no: $('#ward_plot_no').val(),
                 tree_no: $('#tree_no').val(),
                 girth: $('#girth').val(),
                 ownership: $('#ownership').val(),
-                // Map bounds (always send these)
-                north_lat: ne.lat(),
-                south_lat: sw.lat(),
-                east_lng: ne.lng(),
-                west_lng: sw.lng()
             };
 
             $('#btn-get-data').html('<i class="fa fa-spinner fa-spin"></i> Loading...').prop('disabled', true);
@@ -240,9 +237,11 @@
         function updateMapMarkers(trees) {
             clearMarkers();
             if (trees.length === 0) {
-                alert("No trees found for the selected filters in this zoomed area.");
+                alert("No trees found for the selected filters.");
                 return;
             }
+
+            const bounds = new google.maps.LatLngBounds();
 
             trees.forEach(tree => {
                 const lat = parseFloat(tree.latitude);
@@ -264,10 +263,11 @@
                     });
 
                     markers.push(marker);
+                    bounds.extend(position);
                 }
             });
-            
-            // Do NOT call fitBounds - keep the current map view
+
+            map.fitBounds(bounds);
         }
 
         function clearMarkers() {

@@ -75,13 +75,13 @@ class CustomerProjectTreeController extends Controller
             }
     
             // 🔒 Project limit check for role 3
-            // if ($user->role_id == 3 && !$this->checkProjectLimit($user)) {
-            //     return response()->json([
-            //         'status'  => false,
-            //         'message' => 'Project limit reached. Please purchase a plan.',
-            //         'action'  => 'redirect_to_payment'
-            //     ], 403);
-            // }
+            if ($user->role_id == 3 && !$this->checkProjectLimit($user)) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'Project limit reached. Please purchase a plan.',
+                    'action'  => 'redirect_to_payment'
+                ], 403);
+            }
     
             // ✅ Validation
             $validator = Validator::make($request->all(), [

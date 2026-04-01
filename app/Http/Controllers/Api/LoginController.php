@@ -163,21 +163,21 @@ class LoginController extends Controller
                 ]);
 
                 // B. Create Free Wallet (Project=1, Tree=100)
-                // if ($newUser) {
-                //     Wallet::create([
-                //         'user_id' => $newUser->id,
-                //         'project_count' => 1,            // Free Project
-                //         'tree_count' => 100,             // Free Trees
-                //         'razorpay_signature' => 'free',  // Signature Free
-                //         'amount' => 0,                   // Amount 0
-                //         'status' => 'success',           // Status Success
-                //     ]);
-                // }
+                if ($newUser) {
+                    Wallet::create([
+                        'user_id' => $newUser->id,
+                        'project_count' => 1,            // Free Project
+                        'tree_count' => 100,             // Free Trees
+                        'razorpay_signature' => 'free',  // Signature Free
+                        'amount' => 0,                   // Amount 0
+                        'status' => 'success',           // Status Success
+                    ]);
+                }
 
                 return response()->json([
                     'success' => true,
                     'user_type' => 'new', // 👈 KEY FLAG: NEW USER
-                    'message' => 'New User registered OTP sent.',
+                    'message' => 'New User registered, Free Wallet created & OTP sent.',
                     'otp' => $fixedOtp,
                 ], 200); // 200 OK or 201 Created
             }
@@ -736,155 +736,7 @@ class LoginController extends Controller
             ], 500);
         }
     }
-  
-    
-    // public function get_tree_requirements(Request $request)
-    // {
-    //     try {
-    //         // 1. Validation
-    //         $validator = Validator::make($request->all(), [
-    //             'role_id'    => 'required|integer',
-    //             'project_id' => 'required|integer|exists:projects,id',
-    //         ]);
 
-    //         if ($validator->fails()) {
-    //             return response()->json([
-    //                 'success' => false,
-    //                 'message' => 'Validation Error',
-    //                 'errors'  => $validator->errors()
-    //             ], 422);
-    //         }
-
-    //         $role_id = $request->role_id;
-    //         $project_id = $request->project_id;
-
-    //         // Define Default List of Fields (Set all to false initially)
-    //         // Keys match your database/form field names
-    //         $requirements = [
-    //             'all_captured_images' => false,
-    //             'ward_plot_no'    => false,
-    //             'tree_no'         => false,
-    //             'tree_name'       => false,
-    //             'scientific_name' => false,
-    //             'family'          => false,
-    //             'girth'           => false,
-    //             'height'          => false,
-    //             'canopy'          => false,
-    //             'age'             => false,
-    //             'condition'       => false,
-    //             'address'         => false,
-    //             'landmark'        => false,
-    //             'ownership'       => false,
-    //             'concern_person'  => false,
-    //             'remark'          => false,
-    //             'tree_images'     => false,
-    //         ];
-
-    //         // =========================================================
-    //         // CASE 1: ROLE 2 (Company User/Staff) - Fetch from DB
-    //         // =========================================================
-    //         if ($role_id == 2) {
-    //             $settings = \App\Models\ProjectSetting::where('project_id', $project_id)->get();
-
-    //             // Create detailed requirements object with field metadata
-    //             $detailedRequirements = [];
-
-    //             foreach ($settings as $setting) {
-    //                 // If the field exists in our list, update its status based on DB
-    //                 // Assuming DB column 'is_required' is 1 for true
-    //                 if (array_key_exists($setting->field_key, $requirements)) {
-    //                     $requirements[$setting->field_key] = ($setting->is_required == 1);
-
-    //                     // For fields that are required and have min/max values, add them
-    //                     $fieldsWithMinMax = ['all_captured_images', 'girth', 'height', 'canopy', 'age'];
-
-    //                     if (in_array($setting->field_key, $fieldsWithMinMax) && $setting->is_required == 1) {
-    //                         $detailedRequirements[$setting->field_key] = [
-    //                             'is_required' => true,
-    //                             'min_value' => $setting->min_value ?? null,
-    //                             'max_value' => $setting->max_value ?? null,
-    //                         ];
-    //                     } else {
-    //                         // For non-min/max fields or optional fields
-    //                         $detailedRequirements[$setting->field_key] = [
-    //                             'is_required' => ($setting->is_required == 1),
-    //                         ];
-    //                     }
-    //                 }
-    //             }
-
-    //             // If we have detailed requirements, use them; otherwise use simple format
-    //             if (!empty($detailedRequirements)) {
-    //                 $requirements = $detailedRequirements;
-    //             }
-                
-    //             // Convert to detailed format if not already
-    //             $detailedRequirements = [];
-    //             foreach ($requirements as $field => $isRequired) {
-    //                 $detailedRequirements[$field] = [
-    //                     'is_required' => $isRequired,
-    //                 ];
-    //             }
-    //             $requirements = $detailedRequirements;
-                
-    //             // Set ward_no to 10 for role_id 2
-    //             $ward_no = 10;
-    //         }
-
-    //         // =========================================================
-    //         // CASE 2: ROLE 3 (Customer) - Custom Manual Settings
-    //         // =========================================================
-    //         elseif ($role_id == 3) {
-    //             // 👇 YAHAN AAP TRUE/FALSE SET KAR SAKTE HAIN CUSTOMERS KE LIYE
-    //             $requirements = [
-    //                 'ward_plot_no'    => false, // Optional
-    //                 'tree_no'         => false, // Optional
-    //                 'tree_name'       => true,  // Required
-    //                 'scientific_name' => false, // Optional
-    //                 'family'          => false, // Optional
-    //                 'girth'           => true,  // Required
-    //                 'height'          => true,  // Required
-    //                 'canopy'          => false, // Optional
-    //                 'age'             => false, // Optional
-    //                 'condition'       => false, // Optional
-    //                 'address'         => true,  // Required
-    //                 'landmark'        => false, // Optional
-    //                 'ownership'       => false, // Optional
-    //                 'concern_person'  => false, // Optional
-    //                 'remark'          => false, // Optional
-    //                 'tree_images'     => true,  // Required
-    //             ];
-                
-    //             // Convert to detailed format
-    //             $detailedRequirements = [];
-    //             foreach ($requirements as $field => $isRequired) {
-    //                 $detailedRequirements[$field] = [
-    //                     'is_required' => $isRequired,
-    //                 ];
-    //             }
-    //             $requirements = $detailedRequirements;
-                
-    //             // Set ward_no to empty string for role_id 3
-    //             $ward_no = "";
-    //         }
-
-    //         return response()->json([
-    //             'success'      => true,
-    //             'message'      => 'Field requirements fetched successfully.',
-    //             'role_id'      => $role_id,
-    //             'project_id'   => $project_id,
-    //             'ward_no'      => $ward_no,
-    //             'requirements' => $requirements
-    //         ], 200);
-    //     } catch (\Exception $e) {
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Something went wrong',
-    //             'error'   => $e->getMessage()
-    //         ], 500);
-    //     }
-    // }
-    
     public function get_tree_requirements(Request $request)
     {
         try {
@@ -908,7 +760,6 @@ class LoginController extends Controller
             // Define Default List of Fields (Set all to false initially)
             // Keys match your database/form field names
             $requirements = [
-                'all_captured_images' => false,
                 'ward_plot_no'    => false,
                 'tree_no'         => false,
                 'tree_name'       => false,
@@ -933,48 +784,13 @@ class LoginController extends Controller
             if ($role_id == 2) {
                 $settings = \App\Models\ProjectSetting::where('project_id', $project_id)->get();
 
-                // Create detailed requirements object with field metadata
-                $detailedRequirements = [];
-
                 foreach ($settings as $setting) {
                     // If the field exists in our list, update its status based on DB
                     // Assuming DB column 'is_required' is 1 for true
                     if (array_key_exists($setting->field_key, $requirements)) {
                         $requirements[$setting->field_key] = ($setting->is_required == 1);
-
-                        // For fields that are required and have min/max values, add them
-                        $fieldsWithMinMax = ['all_captured_images', 'girth', 'height', 'canopy', 'age'];
-
-                        if (in_array($setting->field_key, $fieldsWithMinMax) && $setting->is_required == 1) {
-                            $detailedRequirements[$setting->field_key] = [
-                                'is_required' => true,
-                                'min_value' => $setting->min_value ?? null,
-                                'max_value' => $setting->max_value ?? null,
-                            ];
-                        } else {
-                            // For non-min/max fields or optional fields
-                            $detailedRequirements[$setting->field_key] = [
-                                'is_required' => ($setting->is_required == 1),
-                            ];
-                        }
                     }
                 }
-
-                // If we have detailed requirements, use them; otherwise use simple format
-                if (!empty($detailedRequirements)) {
-                    $requirements = $detailedRequirements;
-                }
-                
-                // Convert to detailed format if not already
-                $detailedRequirements = [];
-                foreach ($requirements as $field => $data) {
-                    // Agar data pehle se array hai (min/max wala), to wahi rakho, warna array banao
-                    $detailedRequirements[$field] = is_array($data) ? $data : ['is_required' => $data];
-                }
-                $requirements = $detailedRequirements;
-                
-                $project = \App\Models\Project::find($project_id);
-                $ward_no = $project ? $project->ward_no : "";
             }
 
             // =========================================================
@@ -985,33 +801,21 @@ class LoginController extends Controller
                 $requirements = [
                     'ward_plot_no'    => false, // Optional
                     'tree_no'         => false, // Optional
-                    'tree_name'       => false,  // Required
+                    'tree_name'       => true,  // Required
                     'scientific_name' => false, // Optional
                     'family'          => false, // Optional
-                    'girth'           => false,  // Required
-                    'height'          => false,  // Required
+                    'girth'           => true,  // Required
+                    'height'          => true,  // Required
                     'canopy'          => false, // Optional
                     'age'             => false, // Optional
                     'condition'       => false, // Optional
-                    'address'         => false,  // Required
+                    'address'         => true,  // Required
                     'landmark'        => false, // Optional
                     'ownership'       => false, // Optional
                     'concern_person'  => false, // Optional
                     'remark'          => false, // Optional
-                    'tree_images'     => false,  // Required
+                    'tree_images'     => true,  // Required
                 ];
-                
-                // Convert to detailed format
-                $detailedRequirements = [];
-                foreach ($requirements as $field => $isRequired) {
-                    $detailedRequirements[$field] = [
-                        'is_required' => $isRequired,
-                    ];
-                }
-                $requirements = $detailedRequirements;
-                
-                // Set ward_no to empty string for role_id 3
-                $ward_no = "";
             }
 
             return response()->json([
@@ -1019,7 +823,6 @@ class LoginController extends Controller
                 'message'      => 'Field requirements fetched successfully.',
                 'role_id'      => $role_id,
                 'project_id'   => $project_id,
-                'ward_no'      => $ward_no,
                 'requirements' => $requirements
             ], 200);
         } catch (\Exception $e) {
@@ -1030,126 +833,4 @@ class LoginController extends Controller
             ], 500);
         }
     }
-
-    // public function get_tree_requirements(Request $request)
-    // {
-    //     try {
-    //         // 1. Validation
-    //         $validator = Validator::make($request->all(), [
-    //             'role_id'    => 'required|integer',
-    //             'project_id' => 'required|integer|exists:projects,id',
-    //         ]);
-
-    //         if ($validator->fails()) {
-    //             return response()->json([
-    //                 'success' => false,
-    //                 'message' => 'Validation Error',
-    //                 'errors'  => $validator->errors()
-    //             ], 422);
-    //         }
-
-    //         $role_id = $request->role_id;
-    //         $project_id = $request->project_id;
-
-    //         // Define Default List of Fields (Set all to false initially)
-    //         // Keys match your database/form field names
-    //         $requirements = [
-    //             'all_captured_images' => false,
-    //             'ward_plot_no'    => false,
-    //             'tree_no'         => false,
-    //             'tree_name'       => false,
-    //             'scientific_name' => false,
-    //             'family'          => false,
-    //             'girth'           => false,
-    //             'height'          => false,
-    //             'canopy'          => false,
-    //             'age'             => false,
-    //             'condition'       => false,
-    //             'address'         => false,
-    //             'landmark'        => false,
-    //             'ownership'       => false,
-    //             'concern_person'  => false,
-    //             'remark'          => false,
-    //             'tree_images'     => false,
-    //         ];
-
-    //         // =========================================================
-    //         // CASE 1: ROLE 2 (Company User/Staff) - Fetch from DB
-    //         // =========================================================
-    //         if ($role_id == 2) {
-    //             $settings = \App\Models\ProjectSetting::where('project_id', $project_id)->get();
-
-    //             // Create detailed requirements object with field metadata
-    //             $detailedRequirements = [];
-
-    //             foreach ($settings as $setting) {
-    //                 // If the field exists in our list, update its status based on DB
-    //                 // Assuming DB column 'is_required' is 1 for true
-    //                 if (array_key_exists($setting->field_key, $requirements)) {
-    //                     $requirements[$setting->field_key] = ($setting->is_required == 1);
-
-    //                     // For fields that are required and have min/max values, add them
-    //                     $fieldsWithMinMax = ['all_captured_images', 'girth', 'height', 'canopy', 'age'];
-
-    //                     if (in_array($setting->field_key, $fieldsWithMinMax) && $setting->is_required == 1) {
-    //                         $detailedRequirements[$setting->field_key] = [
-    //                             'is_required' => true,
-    //                             'min_value' => $setting->min_value ?? null,
-    //                             'max_value' => $setting->max_value ?? null,
-    //                         ];
-    //                     } else {
-    //                         // For non-min/max fields or optional fields
-    //                         $detailedRequirements[$setting->field_key] = [
-    //                             'is_required' => ($setting->is_required == 1),
-    //                         ];
-    //                     }
-    //                 }
-    //             }
-
-    //             // If we have detailed requirements, use them; otherwise use simple format
-    //             if (!empty($detailedRequirements)) {
-    //                 $requirements = $detailedRequirements;
-    //             }
-    //         }
-
-    //         // =========================================================
-    //         // CASE 2: ROLE 3 (Customer) - Custom Manual Settings
-    //         // =========================================================
-    //         elseif ($role_id == 3) {
-    //             // 👇 YAHAN AAP TRUE/FALSE SET KAR SAKTE HAIN CUSTOMERS KE LIYE
-    //             $requirements = [
-    //                 'ward_plot_no'    => false, // Optional
-    //                 'tree_no'         => false, // Optional
-    //                 'tree_name'       => true,  // Required
-    //                 'scientific_name' => false, // Optional
-    //                 'family'          => false, // Optional
-    //                 'girth'           => true,  // Required
-    //                 'height'          => true,  // Required
-    //                 'canopy'          => false, // Optional
-    //                 'age'             => false, // Optional
-    //                 'condition'       => false, // Optional
-    //                 'address'         => true,  // Required
-    //                 'landmark'        => false, // Optional
-    //                 'ownership'       => false, // Optional
-    //                 'concern_person'  => false, // Optional
-    //                 'remark'          => false, // Optional
-    //                 'tree_images'     => true,  // Required
-    //             ];
-    //         }
-
-    //         return response()->json([
-    //             'success'      => true,
-    //             'message'      => 'Field requirements fetched successfully.',
-    //             'role_id'      => $role_id,
-    //             'project_id'   => $project_id,
-    //             'requirements' => $requirements
-    //         ], 200);
-    //     } catch (\Exception $e) {
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Something went wrong',
-    //             'error'   => $e->getMessage()
-    //         ], 500);
-    //     }
-    // }
 }

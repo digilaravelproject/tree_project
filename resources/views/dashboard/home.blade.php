@@ -57,7 +57,7 @@
                             </div>
                         </div>
 
-                        <?php /*<div class="col-sm-6">
+                        <div class="col-sm-6">
                             <div class="card eshop-cards">
                                 <div class="card-body">
                                     <div class="d-flex justify-content-between align-items-center">
@@ -79,7 +79,7 @@
                                     </div>
                                 </div>
                             </div>
-                        </div> */?>
+                        </div>
 
                         <div class="col-sm-6">
                             <div class="card eshop-cards">
@@ -172,7 +172,7 @@
                     </div>
                 </div>
 
-                <?php /*<div class="col-md-4">
+                <div class="col-md-4">
                     <div class="card">
                         <div class="card-header border-bottom">
                             <h6 class="m-0">District Coverage</h6>
@@ -183,7 +183,7 @@
                             </div>
                         </div>
                     </div>
-                </div> */?>
+                </div>
             </div>
             <div class="row">
                 <div class="col-md-6 col-lg-2 d-none d-xxl-block">

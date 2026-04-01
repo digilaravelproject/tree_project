@@ -24,14 +24,14 @@ class MapController extends Controller
         if ($request->ajax() || $request->wantsJson()) {
 
             // Eager load relationships: project, tree (name), scientific (name), family (name)
-            $baseQuery = MtTree::with(['project', 'tree', 'scientific', 'family'])->select(
+            $query = MtTree::with(['project', 'tree', 'scientific', 'family'])->select(
                 'id',
                 'project_id',
                 'ward_plot_no',
                 'tree_no',
-                'tree_name',
-                'scientific_name',
-                'family',
+                'tree_name', // Assuming this is the foreign key for Tree model
+                'scientific_name', // Assuming this is the foreign key for ScientificName
+                'family', // Assuming this is the foreign key for Family
                 'girth',
                 'height',
                 'canopy',
@@ -52,76 +52,38 @@ class MapController extends Controller
 
             // 1. Project Filter
             if ($request->filled('project_id')) {
-                $baseQuery->where('project_id', $request->project_id);
+                $query->where('project_id', $request->project_id);
+            }
+
+            // 2. Date Range Filter
+            if ($request->filled('start_date') && $request->filled('end_date')) {
+                $query->whereBetween('created_at', [$request->start_date . ' 00:00:00', $request->end_date . ' 23:59:59']);
             }
 
             // 3. Ward Number
             if ($request->filled('ward_plot_no')) {
-                $baseQuery->where('ward_plot_no', $request->ward_plot_no);
+                $query->where('ward_plot_no', $request->ward_plot_no);
             }
 
             // 4. Tree Number
             if ($request->filled('tree_no')) {
-                $baseQuery->where('tree_no', 'like', '%' . $request->tree_no . '%');
+                $query->where('tree_no', 'like', '%' . $request->tree_no . '%');
             }
 
             // 5. Girth
             if ($request->filled('girth')) {
-                $baseQuery->where('girth', '>=', $request->girth);
+                $query->where('girth', '>=', $request->girth);
             }
 
             // 6. Ownership
             if ($request->filled('ownership')) {
-                $baseQuery->where('ownership', $request->ownership);
+                $query->where('ownership', $request->ownership);
             }
 
             // Ensure we only get trees with valid coordinates
-            $baseQuery->whereNotNull('latitude')
-                ->whereNotNull('longitude');
-
-            // Clone query for bounds filtering
-            $query = clone $baseQuery;
-
-            // 2. Map Bounds Filter (Try to apply bounds first)
-            $hasBoundsFilter = false;
-            if ($request->has('north_lat') && $request->has('south_lat') && 
-                $request->has('east_lng') && $request->has('west_lng')) {
-                
-                $north_lat = (float) $request->north_lat;
-                $south_lat = (float) $request->south_lat;
-                $east_lng = (float) $request->east_lng;
-                $west_lng = (float) $request->west_lng;
-
-                // Ensure values are valid numbers
-                if (is_numeric($north_lat) && is_numeric($south_lat) && 
-                    is_numeric($east_lng) && is_numeric($west_lng)) {
-                    
-                    $hasBoundsFilter = true;
-                    
-                    // Latitude bounds (always straightforward)
-                    $query->whereBetween('latitude', [min($south_lat, $north_lat), max($south_lat, $north_lat)]);
-
-                    // Longitude bounds - handle antimeridian crossing
-                    if ($east_lng >= $west_lng) {
-                        // Normal case: bounds don't cross antimeridian
-                        $query->whereBetween('longitude', [$west_lng, $east_lng]);
-                    } else {
-                        // Antimeridian crossing: west > east
-                        $query->where(function($q) use ($west_lng, $east_lng) {
-                            $q->where('longitude', '>=', $west_lng)
-                              ->orWhere('longitude', '<=', $east_lng);
-                        });
-                    }
-                }
-            }
-
-            // Get trees - if bounds filtering returns 0 results, try without bounds
-            $trees = $query->get();
-            
-            if ($trees->count() === 0 && $hasBoundsFilter) {
-                // Fallback: try without bounds filter
-                $trees = $baseQuery->get();
-            }
+            $trees = $query->whereNotNull('latitude')
+                ->whereNotNull('longitude')
+                ->get();
 
             return response()->json([
                 'success' => true,

@@ -121,5 +121,3 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::get('/export/pdf/{project_id}', [ProjectExportController::class, 'downloadPdf'])->name('api.export.pdf');
 Route::get('/export/excel/{project_id}', [ProjectExportController::class, 'downloadExcel'])->name('api.export.excel');
 Route::get('/export/kml/{project_id}', [ProjectExportController::class, 'downloadKml'])->name('api.export.kml');
-Route::get('/export/imgs/{project_id}', [ProjectExportController::class, 'downloadImgsZip'])->name('api.export.imgs');
-

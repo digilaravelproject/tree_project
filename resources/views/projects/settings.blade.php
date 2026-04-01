@@ -40,9 +40,6 @@
                             ['key' => 'remark', 'label' => 'Remark', 'has_range' => false],
                             ['key' => 'ratio', 'label' => 'Ratio', 'has_range' => false],
                         ];
-                        
-                        // Fields that are disabled and must be required
-                        $disabledFields = ['ward_plot_no', 'address', 'condition', 'landmark', 'concern_person_phone', 'remark', 'ratio'];
                     @endphp
 
                     @foreach ($fields as $field)
@@ -51,13 +48,6 @@
                             $isRequired = $project->getSettingVal($field['key'], 'is_required');
                             $minVal = $project->getSettingVal($field['key'], 'min_value');
                             $maxVal = $project->getSettingVal($field['key'], 'max_value');
-                            
-                            // Check if this field should be disabled
-                            $isDisabledField = in_array($field['key'], $disabledFields);
-                            // For disabled fields, always set as required
-                            if ($isDisabledField) {
-                                $isRequired = 1;
-                            }
                         @endphp
 
                         <div class="form-group row mb-3">
@@ -65,15 +55,10 @@
                                 {{ $field['label'] }}
                             </label>
                             <div class="col-sm-9">
-                                <select name="settings[{{ $field['key'] }}][required]" class="form-control mb-2" {{ $isDisabledField ? 'disabled' : '' }}>
+                                <select name="settings[{{ $field['key'] }}][required]" class="form-control mb-2">
                                     <option value="0" {{ $isRequired == 0 ? 'selected' : '' }}>Not Required</option>
                                     <option value="1" {{ $isRequired == 1 ? 'selected' : '' }}>Required</option>
                                 </select>
-                                
-                                {{-- Hidden field to ensure disabled select value is submitted --}}
-                                @if ($isDisabledField)
-                                    <input type="hidden" name="settings[{{ $field['key'] }}][required]" value="1">
-                                @endif
 
                                 @if ($field['has_range'])
                                     <div class="row">

@@ -70,13 +70,13 @@ class WorkController extends Controller
             ], 500);
         }
     }
-
+    
     public function tree_list_old()
     {
         $trees = Tree::all(['id', 'name']);
         return response()->json($trees);
     }
-
+    
     public function tree_list()
     {
         $trees = Tree::leftJoin('scientific_names', 'trees.id', '=', 'scientific_names.tree_id')
@@ -88,7 +88,7 @@ class WorkController extends Controller
                 'families.family_name'
             )
             ->get();
-
+    
         return response()->json($trees);
     }
 
@@ -136,21 +136,23 @@ class WorkController extends Controller
         ]);
 
         $girth = $request->girth;
+        $height_factor = 0.6;
+        $canopy_factor = 0.8;
+        $age_factor = 1.5;
 
-        $height_m   = $girth / 5;
-        $canopy_m   = $girth / 6;
-        $age        = $girth / 3;
+        // Calculations
+        $height_cm = $girth * $height_factor;
+        $canopy_cm = $girth * $canopy_factor;
+        $age = $girth * $age_factor;
+        $height_m = $height_cm / 100;
+        $canopy_m = $canopy_cm / 100;
 
-        $height_ft  = $height_m * 3.2;
-        $canopy_ft  = $canopy_m * 3.2;
-
+        // Return as JSON
         return response()->json([
-            'girth_cm'            => round($girth),
-            'estimated_height_m'  => round($height_m),
-            'estimated_height_ft' => round($height_ft),
-            'estimated_canopy_m'  => round($canopy_m),
-            'estimated_canopy_ft' => round($canopy_ft),
-            'estimated_age_years' => round($age),
+            'girth_cm' => $girth,
+            'estimated_height_m' => round($height_m, 2),
+            'estimated_canopy_m' => round($canopy_m, 2),
+            'estimated_age_years' => round($age, 1),
         ]);
     }
 }

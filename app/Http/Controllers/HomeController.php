@@ -12,8 +12,6 @@ use App\Models\ScientificName;
 use App\Models\Family;
 use App\Models\MtTree;
 use App\Models\District;
-use App\Models\UserFreeTree;
-use App\Models\UserPaidTree;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
 use App\Imports\TreesImport;
@@ -109,7 +107,7 @@ class HomeController extends Controller
             'company_name' => 'required|string|max:255',
             'field_officer_name' => 'required|array',
             'field_officer_name.*' => 'exists:users,id',
-            'ward_no' => 'required',
+            'limit' => 'required|numeric|min:1',
         ]);
 
         Project::create([
@@ -118,7 +116,7 @@ class HomeController extends Controller
             'client_name' => $request->client_name,
             'company_name' => $request->company_name,
             'field_officer_id' => json_encode($request->field_officer_name),
-            'ward_no' => $request->ward_no,
+            'limit' => $request->limit,
         ]);
 
         return redirect()->route('project.list')->with('success', 'Project created successfully!');
@@ -172,50 +170,9 @@ class HomeController extends Controller
 
     public function destroy($id)
     {
-        try {
-            DB::beginTransaction();
-
-            $project = Project::findOrFail($id);
-
-            // 1. Fetch all MtTree IDs for this project
-            $treeIds = MtTree::where('project_id', $id)->pluck('id')->toArray();
-
-            if (!empty($treeIds)) {
-                // 2. Delete logs from UserPaidTree for these trees
-                UserPaidTree::whereIn('mt_tree_id', $treeIds)->delete();
-
-                // 3. Remove these tree IDs from UserFreeTree JSON arrays
-                $freeRecords = UserFreeTree::all();
-                foreach ($freeRecords as $record) {
-                    $currentIds = $record->tree_ids ?? [];
-                    if (!empty($currentIds)) {
-                        $updatedIds = array_values(array_diff($currentIds, $treeIds));
-
-                        if (count($currentIds) !== count($updatedIds)) {
-                            $record->tree_ids = $updatedIds;
-                            $record->used_count = count($updatedIds);
-                            $record->save();
-                        }
-                    }
-                }
-
-                // 4. Delete all trees from MtTree table
-                MtTree::where('project_id', $id)->delete();
-            }
-
-            // 5. Delete Project Settings
-            ProjectSetting::where('project_id', $id)->delete();
-
-            // 6. Finally delete the Project
-            $project->delete();
-
-            DB::commit();
-            return redirect()->route('project.list')->with('success', 'Project and all related data deleted successfully!');
-        } catch (\Exception $e) {
-            DB::rollback();
-            Log::error("Project Delete Error: " . $e->getMessage());
-            return redirect()->back()->with('error', 'Something went wrong while deleting: ' . $e->getMessage());
-        }
+        $project = Project::findOrFail($id);
+        $project->delete();
+        return redirect()->route('project.list')->with('success', 'Project deleted successfully.');
     }
 
     public function edit($id)
@@ -237,7 +194,7 @@ class HomeController extends Controller
             'company_name' => 'nullable|string|max:255',
             'field_officer_id' => 'required|array',
             'field_officer_id.*' => 'exists:users,id',
-            'ward_no' => 'required|numeric|min:1',
+            'limit' => 'required|numeric|min:1',
         ]);
 
         $project->update([
@@ -246,10 +203,10 @@ class HomeController extends Controller
             'state_id' => $request->state_id,
             'company_name' => $request->company_name,
             'field_officer_id' => json_encode($request->field_officer_id),
-            'ward_no' => $request->ward_no,
+            'limit' => $request->limit,
         ]);
 
-        return redirect()->route('project.list')->with('success', 'Project updated successfully!');
+        return redirect()->route('project.list')->with('success', 'Project updated successfully.');
     }
 
     public function storetree_data(Request $request)
@@ -304,7 +261,7 @@ class HomeController extends Controller
             $treeData->latitude       = $request->latitude;
             $treeData->longitude      = $request->longitude;
             $treeData->remark         = $request->remark;
-
+            
             if ($request->hasFile('tree_images')) {
                 $imagePaths = [];
                 foreach ($request->file('tree_images') as $image) {
@@ -414,14 +371,20 @@ class HomeController extends Controller
         }
     }
 
+    // ==========================================
+    // ✅ 1. UPDATED TREE LIST WITH FILTERS ✅
+    // ==========================================
     public function tree_list(Request $request)
     {
         $page_title = 'Tree List';
-
+        
+        // Fetch Projects for Dropdown
         $projects = Project::select('id', 'project_name')->get();
-
+        
+        // Start Query
         $query = MtTree::with(['project', 'tree', 'scientific', 'familyRelation']);
 
+        // Apply Filters
         if ($request->filled('project_id')) {
             $query->where('project_id', $request->project_id);
         }
@@ -432,25 +395,32 @@ class HomeController extends Controller
 
         if ($request->filled('from_date') && $request->filled('to_date')) {
             $query->whereBetween('created_at', [
-                $request->from_date . ' 00:00:00',
+                $request->from_date . ' 00:00:00', 
                 $request->to_date . ' 23:59:59'
             ]);
         }
 
+        // Get Results (Using get() as per your original code)
         $trees = $query->orderBy('id', 'desc')->get();
 
         return view('dashboard.tree_list', compact('page_title', 'trees', 'projects'));
     }
 
+    // ==========================================
+    // ✅ 2. EXPORT EXCEL FUNCTION ✅
+    // ==========================================
     public function export_tree_excel(Request $request)
     {
         return Excel::download(new TreeExport($request), 'trees_export.xlsx');
     }
 
+    // ==========================================
+    // ✅ 3. EXPORT PDF FUNCTION ✅
+    // ==========================================
     public function export_tree_pdf(Request $request)
     {
         $page_title = 'Tree List Report';
-
+        
         $query = MtTree::with(['project', 'tree', 'scientific', 'familyRelation']);
 
         if ($request->filled('project_id')) {
@@ -461,7 +431,7 @@ class HomeController extends Controller
         }
         if ($request->filled('from_date') && $request->filled('to_date')) {
             $query->whereBetween('created_at', [
-                $request->from_date . ' 00:00:00',
+                $request->from_date . ' 00:00:00', 
                 $request->to_date . ' 23:59:59'
             ]);
         }
@@ -701,78 +671,87 @@ class HomeController extends Controller
         Excel::import(new TreesImport, $request->file('file'));
         return redirect()->route('tree.name.list')->with('success', 'Trees imported successfully!');
     }
+    
+   public function subscription_list()
+{
+    $page_title = 'User Subscriptions';
+    $subscriptions = \App\Models\UserPaidTree::with([
+        'user', 
+        'tree.treeDetail'
+    ])->orderBy('created_at', 'desc')->get();
 
-    public function subscription_list()
-    {
-        $page_title = 'User Subscriptions';
-        $subscriptions = \App\Models\UserPaidTree::with([
-            'user',
-            'tree.treeDetail'
-        ])->orderBy('created_at', 'desc')->get();
+    return view('dashboard.subscriptions', compact('page_title', 'subscriptions'));
+}
+    
+    
+    
+    public function export_tree_images_zip(Request $request)
+{
+    // Agar images zyada hain toh execution time badha dete hain
+    set_time_limit(0); 
 
-        return view('dashboard.subscriptions', compact('page_title', 'subscriptions'));
+    $query = MtTree::query();
+
+    // 1. Filters (Same as Tree List)
+    if ($request->filled('project_id')) {
+        $query->where('project_id', $request->project_id);
+    }
+    if ($request->filled('tree_no')) {
+        $query->where('tree_no', 'like', '%' . $request->tree_no . '%');
+    }
+    if ($request->filled('from_date') && $request->filled('to_date')) {
+        $query->whereBetween('created_at', [
+            $request->from_date . ' 00:00:00',
+            $request->to_date . ' 23:59:59'
+        ]);
     }
 
-    public function export_tree_images_zip(Request $request)
-    {
-        set_time_limit(0);
+    $trees = $query->with('project')->get();
 
-        $query = MtTree::query();
+    if ($trees->isEmpty()) {
+        return redirect()->back()->with('error', 'In filters ke liye koi images nahi mili.');
+    }
 
-        if ($request->filled('project_id')) {
-            $query->where('project_id', $request->project_id);
-        }
-        if ($request->filled('tree_no')) {
-            $query->where('tree_no', 'like', '%' . $request->tree_no . '%');
-        }
-        if ($request->filled('from_date') && $request->filled('to_date')) {
-            $query->whereBetween('created_at', [
-                $request->from_date . ' 00:00:00',
-                $request->to_date . ' 23:59:59'
-            ]);
-        }
+    // 2. Zip File Setup
+    $zipFileName = 'Tree_Images_' . date('d-m-Y_H-i') . '.zip';
+    $zipPath = storage_path('app/public/' . $zipFileName);
 
-        $trees = $query->with('project')->get();
+    $zip = new ZipArchive;
 
-        if ($trees->isEmpty()) {
-            return redirect()->back()->with('error', 'No images found for these filters.');
-        }
+    if ($zip->open($zipPath, ZipArchive::CREATE) === TRUE) {
+        foreach ($trees as $tree) {
+            if (!empty($tree->all_captured_images)) {
+                // Check if string then decode
+                $images = is_string($tree->all_captured_images) 
+                          ? json_decode($tree->all_captured_images, true) 
+                          : $tree->all_captured_images;
 
-        $zipFileName = 'Tree_Images_' . date('d-m-Y_H-i') . '.zip';
-        $zipPath = storage_path('app/public/' . $zipFileName);
+                if (is_array($images)) {
+                    foreach ($images as $imagePath) {
+                        // Agar DB mein pura path hai toh bhi, aur agar sirf filename hai toh bhi:
+                        $fullPath = public_path($imagePath);
 
-        $zip = new ZipArchive;
-
-        if ($zip->open($zipPath, ZipArchive::CREATE) === TRUE) {
-            foreach ($trees as $tree) {
-                if (!empty($tree->all_captured_images)) {
-                    $images = is_string($tree->all_captured_images)
-                        ? json_decode($tree->all_captured_images, true)
-                        : $tree->all_captured_images;
-
-                    if (is_array($images)) {
-                        foreach ($images as $imagePath) {
-                            $fullPath = public_path($imagePath);
-
-                            if (File::exists($fullPath) && is_file($fullPath)) {
-                                $projectName = $tree->project->project_name ?? 'Other_Project';
-                                $cleanProjectName = str_replace(['/', '\\', ' '], '_', $projectName);
-
-                                $innerPath = $cleanProjectName . '/Tree_' . $tree->tree_no . '_' . basename($imagePath);
-
-                                $zip->addFile($fullPath, $innerPath);
-                            }
+                        if (File::exists($fullPath) && is_file($fullPath)) {
+                            // Zip ke andar structure: Project_Name/Tree_No_FileName.jpg
+                            $projectName = $tree->project->project_name ?? 'Other_Project';
+                            $cleanProjectName = str_replace(['/', '\\', ' '], '_', $projectName); // Safe Folder Name
+                            
+                            $innerPath = $cleanProjectName . '/Tree_' . $tree->tree_no . '_' . basename($imagePath);
+                            
+                            $zip->addFile($fullPath, $innerPath);
                         }
                     }
                 }
             }
-            $zip->close();
         }
-
-        if (File::exists($zipPath)) {
-            return response()->download($zipPath)->deleteFileAfterSend(true);
-        } else {
-            return redirect()->back()->with('error', 'Zip file could not be generated.');
-        }
+        $zip->close();
     }
+
+    // 3. Download and Cleanup
+    if (File::exists($zipPath)) {
+        return response()->download($zipPath)->deleteFileAfterSend(true);
+    } else {
+        return redirect()->back()->with('error', 'Zip file generate nahi ho saki.');
+    }
+}
 }

@@ -7,70 +7,23 @@ use Illuminate\Http\Request;
 use App\Models\Project;
 use App\Models\MtTree;
 use App\Models\Tree;
-use App\Models\User;
-use App\Models\TreePrice;
-use App\Models\UserFreeTree;
-use App\Models\UserPaidTree;
 use App\Models\ScientificName;
 use App\Models\Family;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\ProjectTreeExport;
 use Barryvdh\DomPDF\Facade\Pdf;
 use DOMDocument;
-use ZipArchive;
-use Illuminate\Support\Facades\File;
 
 class ProjectExportController extends Controller
 {
-    // =====================================================================
-    // HELPER: Role-3 user ke liye tree access check karo aur status return karo
-    // =====================================================================
-    private function checkRole3Access(int $userId, array $requestedTreeIds): array
-    {
-        $freeRecord   = UserFreeTree::getOrCreate($userId);
-        $paidTreeIds  = UserPaidTree::where('user_id', $userId)
-            ->whereIn('mt_tree_id', $requestedTreeIds)
-            ->pluck('mt_tree_id')
-            ->toArray();
-
-        // 1. Pehle se accessible trees (free + paid)
-        $alreadyFreeIds = array_values(array_intersect($requestedTreeIds, $freeRecord->tree_ids ?? []));
-        $alreadyPaidIds = $paidTreeIds;
-        $alreadyAccessible = array_unique(array_merge($alreadyFreeIds, $alreadyPaidIds));
-
-        // 2. Naye trees jo na free hain na paid
-        $newTreeIds = array_values(array_diff($requestedTreeIds, $alreadyAccessible));
-
-        // 3. Kitne free slots baaki hain
-        $remainingFreeSlots = $freeRecord->remainingFreeSlots();
-
-        // 4. Naye trees me se free me de sakte hain
-        $canGetFree = array_slice($newTreeIds, 0, $remainingFreeSlots);
-
-        // 5. Jo free nahi milenge unhe payment chahiye
-        $needsPayment = array_values(array_diff($newTreeIds, $canGetFree));
-
-        return [
-            'free_record'        => $freeRecord,
-            'already_accessible' => $alreadyAccessible, // pehle se granted
-            'can_get_free'       => $canGetFree,          // abhi free milenge
-            'needs_payment'      => $needsPayment,        // payment required
-            'remaining_slots'    => $remainingFreeSlots,
-        ];
-    }
-
-    // =====================================================================
-    // 1. GET EXPORT LINKS — with Role-3 Access Logic
-    // =====================================================================
+    // 1. Generate Links based on optional Tree IDs
     public function get_project_export_links(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'project_id' => 'required|exists:projects,id',
-            'user_id'    => 'required|exists:users,id',
-            'tree_ids'   => 'nullable|array',
-            'tree_ids.*' => 'integer',
+            'tree_ids'   => 'nullable|array', // Optional: Agar specific trees chahiye
+            'tree_ids.*' => 'integer'
         ]);
 
         if ($validator->fails()) {
@@ -78,120 +31,43 @@ class ProjectExportController extends Controller
         }
 
         $projectId = $request->project_id;
-        $userId    = $request->user_id;
-        $user      = User::find($userId);
-
-        // Requested tree IDs determine karo
-        if ($request->filled('tree_ids') && count($request->tree_ids) > 0) {
-            $requestedTreeIds = MtTree::whereIn('id', $request->tree_ids)
-                ->where('project_id', $projectId)
-                ->pluck('id')
-                ->toArray();
+        
+        // Count update logic based on selection
+        if ($request->has('tree_ids') && count($request->tree_ids) > 0) {
+            $treeCount = MtTree::whereIn('id', $request->tree_ids)->where('project_id', $projectId)->count();
+            // Convert array to comma separated string for URL (e.g., "38,39")
+            $treeIdsParam = implode(',', $request->tree_ids);
+            $queryParams = ['project_id' => $projectId, 'tree_ids' => $treeIdsParam];
         } else {
-            $requestedTreeIds = MtTree::where('project_id', $projectId)
-                ->pluck('id')
-                ->toArray();
+            $treeCount = MtTree::where('project_id', $projectId)->count();
+            $queryParams = ['project_id' => $projectId];
         }
 
-        if (empty($requestedTreeIds)) {
-            return response()->json(['success' => false, 'message' => 'Koi trees nahi mile is selection ke liye.'], 404);
-        }
-
-        // -------------------------------------------------------
-        // Role != 3: Direct download — koi restriction nahi
-        // -------------------------------------------------------
-        if ($user->role_id != 3) {
-            $treeIdsParam  = implode(',', $requestedTreeIds);
-            $queryParams   = ['project_id' => $projectId, 'tree_ids' => $treeIdsParam];
-
-            return response()->json([
-                'success'         => true,
-                'access'          => 'full',
-                'message'         => 'Export links generated successfully.',
-                'project_id'      => $projectId,
-                'tree_count'      => count($requestedTreeIds),
-                'links'           => $this->buildLinks($queryParams),
-            ], 200);
-        }
-
-        // -------------------------------------------------------
-        // Role == 3: Free 100 + Paid access logic
-        // -------------------------------------------------------
-        $access = $this->checkRole3Access($userId, $requestedTreeIds);
-
-        // Free trees ko grant karo (DB update)
-        $newlyGrantedFree = [];
-        if (!empty($access['can_get_free'])) {
-            $newlyGrantedFree = $access['free_record']->addFreeTreeIds($access['can_get_free']);
-        }
-
-        // Final accessible tree IDs
-        $accessibleIds = array_unique(array_merge(
-            $access['already_accessible'],
-            $newlyGrantedFree
-        ));
-
-        // Jo trees payment ke bina accessible hain unke links
-        $links = null;
-        if (!empty($accessibleIds)) {
-            $treeIdsParam = implode(',', $accessibleIds);
-            $queryParams  = ['project_id' => $projectId, 'tree_ids' => $treeIdsParam];
-            $links        = $this->buildLinks($queryParams);
-        }
-
-        // Payment required trees ka price calculate karo
-        $paymentInfo = null;
-        if (!empty($access['needs_payment'])) {
-            $activePrice = TreePrice::active()->orderBy('id', 'desc')->first();
-            $pricePerTree = $activePrice ? $activePrice->price : 0;
-            $totalAmount  = $pricePerTree * count($access['needs_payment']);
-
-            $paymentInfo = [
-                'tree_ids'      => array_values($access['needs_payment']),
-                'tree_count'    => count($access['needs_payment']),
-                'price_per_tree' => $pricePerTree,
-                'total_amount'  => $totalAmount,
-                'message'       => count($access['needs_payment']) . ' trees ke liye payment karni hogi. Price: ₹' . $pricePerTree . ' per tree.',
-            ];
-        }
+        // Generate Links with Query Parameters
+        $links = [
+            'pdf'   => route('api.export.pdf', $queryParams),
+            'excel' => route('api.export.excel', $queryParams),
+            'kml'   => route('api.export.kml', $queryParams),
+        ];
 
         return response()->json([
-            'success'              => true,
-            'access'               => empty($access['needs_payment']) ? 'full' : 'partial',
-            'message'              => empty($access['needs_payment'])
-                ? 'Saare trees accessible hain.'
-                : 'Kuch trees ke liye payment required hai.',
-            'project_id'           => $projectId,
-            'free_trees_used'      => count($access['free_record']->tree_ids ?? []),
-            'free_trees_remaining' => $access['free_record']->remainingFreeSlots(),
-            'accessible_tree_count' => count($accessibleIds),
-            'links'                => $links,                // Accessible trees ke links
-            'payment_required'     => $paymentInfo,          // null if no payment needed
+            'success'    => true,
+            'message'    => 'Export links generated successfully.',
+            'project_id' => $projectId,
+            'tree_count' => $treeCount,
+            'links'      => $links
         ], 200);
     }
 
-    // =====================================================================
-    // HELPER: Links array banao
-    // =====================================================================
-    private function buildLinks(array $queryParams): array
-    {
-        return [
-            'pdf'      => route('api.export.pdf',   $queryParams),
-            'excel'    => route('api.export.excel', $queryParams),
-            'kml'      => route('api.export.kml',   $queryParams),
-            'imgs_zip' => route('api.export.imgs',  $queryParams),
-        ];
-    }
-
-    // =====================================================================
     // 2. DOWNLOAD PDF (Filtered)
-    // =====================================================================
     public function downloadPdf(Request $request, $project_id)
     {
         $project = Project::find($project_id);
-
+        
+        // Start Query
         $query = MtTree::where('project_id', $project_id);
 
+        // Check if tree_ids exist in URL (e.g. ?tree_ids=38,39)
         if ($request->has('tree_ids')) {
             $ids = explode(',', $request->tree_ids);
             $query->whereIn('id', $ids);
@@ -199,30 +75,21 @@ class ProjectExportController extends Controller
 
         $trees = $query->get();
 
-        $sorted = $trees->sort(function ($a, $b) {
-            $numA = intval(preg_replace('/[^0-9]/', '', $a->tree_no));
-            $numB = intval(preg_replace('/[^0-9]/', '', $b->tree_no));
-            if ($numA == $numB) return 0;
-            return ($numA < $numB) ? -1 : 1;
-        });
-        $trees = $sorted->values();
-
         if ($trees->isEmpty()) {
             return response()->json(['message' => 'No trees found for this selection'], 404);
         }
 
-        $pdf      = Pdf::loadView('exports.project_trees_pdf', compact('project', 'trees'));
+        $pdf = Pdf::loadView('exports.project_trees_pdf', compact('project', 'trees'));
         $filename = 'Project_' . $project_id . '_Trees.pdf';
         return $pdf->download($filename);
     }
 
-    // =====================================================================
     // 3. DOWNLOAD EXCEL (Filtered)
-    // =====================================================================
     public function downloadExcel(Request $request, $project_id)
     {
+        // Check existence
         $query = MtTree::where('project_id', $project_id);
-
+        
         $treeIdsArray = [];
         if ($request->has('tree_ids')) {
             $treeIdsArray = explode(',', $request->tree_ids);
@@ -234,18 +101,23 @@ class ProjectExportController extends Controller
         }
 
         $filename = 'Project_' . $project_id . '_Trees.xlsx';
+
+        // Note: Aapko apne 'ProjectTreeExport' class ko update karna padega 
+        // taaki wo constructor mein second parameter accept kare, 
+        // ya phir Maatwebsite ke `FromQuery` use karein.
+        // Assuming your Export class handles logic or you update it to accept IDs.
         return Excel::download(new ProjectTreeExport($project_id, $treeIdsArray), $filename);
     }
 
-    // =====================================================================
     // 4. DOWNLOAD KML (Filtered)
-    // =====================================================================
     public function downloadKml(Request $request, $project_id)
     {
         $project = Project::find($project_id);
-
+        
+        // Start Query
         $query = MtTree::where('project_id', $project_id);
 
+        // Filter Logic
         if ($request->has('tree_ids')) {
             $ids = explode(',', $request->tree_ids);
             $query->whereIn('id', $ids);
@@ -253,40 +125,36 @@ class ProjectExportController extends Controller
 
         $trees = $query->get();
 
-        $sorted = $trees->sort(function ($a, $b) {
-            $numA = intval(preg_replace('/[^0-9]/', '', $a->tree_no));
-            $numB = intval(preg_replace('/[^0-9]/', '', $b->tree_no));
-            if ($numA == $numB) return 0;
-            return ($numA < $numB) ? -1 : 1;
-        });
-        $trees = $sorted->values();
-
         if ($trees->isEmpty()) {
             return response()->json(['message' => 'No trees found for this selection'], 404);
         }
 
-        $baseUrl  = url('/') . '/public/';
-        $schemaId = 'Project_' . $project_id . '_Schema';
-        $styleId  = 'tree_icon_style';
+        $baseUrl = url('/') . '/public/';
+        $schemaId = "Project_" . $project_id . "_Schema";
+        $styleId = "tree_icon_style";
 
+        // 1. Initialize DOM
         $dom = new DOMDocument('1.0', 'UTF-8');
         $dom->formatOutput = true;
 
+        // 2. KML Root
         $kml = $dom->createElement('kml');
         $kml->setAttribute('xmlns', 'http://www.opengis.net/kml/2.2');
         $dom->appendChild($kml);
 
+        // 3. Document
         $document = $dom->createElement('Document');
         $kml->appendChild($document);
 
+        // Name
         $docName = $dom->createElement('name', $project->project_name ?? 'Project Data');
         $document->appendChild($docName);
 
-        // Style
-        $style     = $dom->createElement('Style');
+        // Style Definition
+        $style = $dom->createElement('Style');
         $style->setAttribute('id', $styleId);
         $iconStyle = $dom->createElement('IconStyle');
-        $scale     = $dom->createElement('scale', '1.1');
+        $scale = $dom->createElement('scale', '1.1');
         $iconStyle->appendChild($scale);
         $icon = $dom->createElement('Icon');
         $href = $dom->createElement('href', 'http://maps.google.com/mapfiles/kml/pal2/icon4.png');
@@ -295,67 +163,72 @@ class ProjectExportController extends Controller
         $style->appendChild($iconStyle);
         $document->appendChild($style);
 
-        // Schema
+        // 4. Schema
         $schema = $dom->createElement('Schema');
         $schema->setAttribute('name', $project->project_name ?? 'Project Data');
         $schema->setAttribute('id', $schemaId);
 
         $fields = [
-            'Tree_No' => 'string',
-            'Ward_Plot_No' => 'string',
-            'Tree_Name' => 'string',
-            'Scientific_Name' => 'string',
-            'Family' => 'string',
-            'Girth' => 'string',
-            'Height' => 'string',
-            'Canopy' => 'string',
-            'Age' => 'string',
-            'Condition' => 'string',
-            'Address' => 'string',
-            'Landmark' => 'string',
-            'Ownership' => 'string',
-            'Concern_Person' => 'string',
-            'Remark' => 'string',
-            'Date_Added' => 'string',
-            'Image_Path' => 'string',
+            'Tree_No' => 'string', 'Ward_Plot_No' => 'string', 'Tree_Name' => 'string',
+            'Scientific_Name' => 'string', 'Family' => 'string', 'Girth' => 'string',
+            'Height' => 'string', 'Canopy' => 'string', 'Age' => 'string',
+            'Condition' => 'string', 'Address' => 'string', 'Landmark' => 'string',
+            'Ownership' => 'string', 'Concern_Person' => 'string', 'Remark' => 'string',
+            'Date_Added' => 'string', 'Image_Path' => 'string',
         ];
 
-        foreach ($fields as $fieldName => $fieldType) {
+        foreach ($fields as $fieldName => $type) {
             $simpleField = $dom->createElement('SimpleField');
-            $simpleField->setAttribute('type', $fieldType);
             $simpleField->setAttribute('name', $fieldName);
+            $simpleField->setAttribute('type', $type);
+            $displayName = $dom->createElement('displayName', str_replace('_', ' ', $fieldName));
+            $simpleField->appendChild($displayName);
             $schema->appendChild($simpleField);
         }
         $document->appendChild($schema);
 
-        // Placemarks
+        // 5. Loop Data
         foreach ($trees as $tree) {
             $tName = Tree::find($tree->tree_name)->name ?? 'N/A';
             $sName = ScientificName::find($tree->scientific_name)->scientific_name ?? 'N/A';
             $fName = Family::find($tree->family)->family_name ?? 'N/A';
 
-            $images           = is_string($tree->all_captured_images)
-                ? json_decode($tree->all_captured_images, true)
-                : ($tree->all_captured_images ?? []);
-            $imagePaths       = is_array($images)
-                ? array_map(fn($p) => $baseUrl . ltrim($p, '/'), $images)
-                : [];
-            $imagePathString  = implode(' | ', $imagePaths);
+            // Images
+            $imageUrls = [];
+            $imgHtml = "";
+            if (!empty($tree->all_captured_images)) {
+                $decoded = json_decode($tree->all_captured_images, true);
+                if (is_array($decoded)) {
+                    foreach ($decoded as $imgPath) {
+                        $fullUrl = $baseUrl . str_replace('\/', '/', $imgPath);
+                        $imageUrls[] = $fullUrl;
+                        $imgHtml .= "<br/><img src='{$fullUrl}' width='300' style='margin-top:5px; border:1px solid #ccc;'/>";
+                    }
+                }
+            }
+            $imagePathString = implode(', ', $imageUrls);
 
+            // Placemark
             $placemark = $dom->createElement('Placemark');
-
-            $pmName = $dom->createElement('name', $tree->tree_no . ' - ' . $tName);
-            $placemark->appendChild($pmName);
-
             $styleUrl = $dom->createElement('styleUrl', '#' . $styleId);
             $placemark->appendChild($styleUrl);
+            $nameNode = $dom->createElement('name', "Tree " . $tree->tree_no);
+            $placemark->appendChild($nameNode);
 
+            if (!empty($imgHtml)) {
+                $description = $dom->createElement('description');
+                $description->appendChild($dom->createCDATASection($imgHtml));
+                $placemark->appendChild($description);
+            }
+
+            // Extended Data
             $extendedData = $dom->createElement('ExtendedData');
-            $schemaData   = $dom->createElement('SchemaData');
+            $schemaData = $dom->createElement('SchemaData');
             $schemaData->setAttribute('schemaUrl', '#' . $schemaId);
 
-            $addData = function ($name, $value) use ($dom, $schemaData) {
-                $simpleData = $dom->createElement('SimpleData', htmlspecialchars((string) ($value ?? '')));
+            $addData = function ($name, $val) use ($dom, $schemaData) {
+                $val = $val ?? '';
+                $simpleData = $dom->createElement('SimpleData', htmlspecialchars($val));
                 $simpleData->setAttribute('name', $name);
                 $schemaData->appendChild($simpleData);
             };
@@ -366,8 +239,8 @@ class ProjectExportController extends Controller
             $addData('Scientific_Name', $sName);
             $addData('Family', $fName);
             $addData('Girth', $tree->girth . ' cm');
-            $addData('Height', $tree->height . ' ft');
-            $addData('Canopy', $tree->canopy . ' ft');
+            $addData('Height', $tree->height . ' m');
+            $addData('Canopy', $tree->canopy . ' m');
             $addData('Age', $tree->age . ' years');
             $addData('Condition', $tree->condition);
             $addData('Address', $tree->address);
@@ -381,8 +254,9 @@ class ProjectExportController extends Controller
             $extendedData->appendChild($schemaData);
             $placemark->appendChild($extendedData);
 
+            // Coordinates
             if (!empty($tree->latitude) && !empty($tree->longitude)) {
-                $point       = $dom->createElement('Point');
+                $point = $dom->createElement('Point');
                 $coordinates = $dom->createElement('coordinates', "{$tree->longitude},{$tree->latitude},0");
                 $point->appendChild($coordinates);
                 $placemark->appendChild($point);
@@ -399,73 +273,9 @@ class ProjectExportController extends Controller
             },
             200,
             [
-                'Content-Type'        => 'application/vnd.google-earth.kml+xml',
+                'Content-Type' => 'application/vnd.google-earth.kml+xml',
                 'Content-Disposition' => 'attachment; filename="' . $filename . '"',
             ]
         );
-    }
-
-    // =====================================================================
-    // 5. DOWNLOAD IMAGES ZIP (Filtered)
-    // =====================================================================
-    public function downloadImgsZip(Request $request, $project_id)
-    {
-        set_time_limit(0);
-
-        $query = MtTree::query()->where('project_id', $project_id);
-
-        if ($request->has('tree_ids')) {
-            $ids = explode(',', $request->tree_ids);
-            $query->whereIn('id', $ids);
-        }
-
-        if ($request->filled('tree_no')) {
-            $query->where('tree_no', 'like', '%' . $request->tree_no . '%');
-        }
-        if ($request->filled('from_date') && $request->filled('to_date')) {
-            $query->whereBetween('created_at', [
-                $request->from_date . ' 00:00:00',
-                $request->to_date . ' 23:59:59',
-            ]);
-        }
-
-        $trees = $query->with('project')->get();
-
-        if ($trees->isEmpty()) {
-            return response()->json(['success' => false, 'message' => 'In filters ke liye koi images nahi mili.'], 404);
-        }
-
-        $zipFileName = 'Tree_Images_project_' . $project_id . '_' . date('d-m-Y_H-i') . '.zip';
-        $zipPath     = storage_path('app/public/' . $zipFileName);
-        $zip         = new ZipArchive();
-
-        if ($zip->open($zipPath, ZipArchive::CREATE) === true) {
-            foreach ($trees as $tree) {
-                if (!empty($tree->all_captured_images)) {
-                    $images = is_string($tree->all_captured_images)
-                        ? json_decode($tree->all_captured_images, true)
-                        : $tree->all_captured_images;
-
-                    if (is_array($images)) {
-                        foreach ($images as $imagePath) {
-                            $fullPath = public_path($imagePath);
-                            if (File::exists($fullPath) && is_file($fullPath)) {
-                                $projectName      = $tree->project->project_name ?? 'Other_Project';
-                                $cleanProjectName = str_replace(['/', '\\', ' '], '_', $projectName);
-                                $innerPath        = $cleanProjectName . '/Tree_' . $tree->tree_no . '_' . basename($imagePath);
-                                $zip->addFile($fullPath, $innerPath);
-                            }
-                        }
-                    }
-                }
-            }
-            $zip->close();
-        }
-
-        if (File::exists($zipPath)) {
-            return response()->download($zipPath)->deleteFileAfterSend(true);
-        }
-
-        return response()->json(['success' => false, 'message' => 'Zip file generate nahi ho saki.'], 500);
     }
 }

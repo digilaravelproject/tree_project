@@ -82,7 +82,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/Profile', [HomeController::class, 'Profile'])->name('profile');
     Route::middleware(['can:project'])->group(function () {
-        Route::get('/project/list', [HomeController::class, 'to'])->name('project.list');
+        Route::get('/project/list', [HomeController::class, 'project_list'])->name('project.list');
         Route::get('/projects/{id}/settings', [HomeController::class, 'settings'])->name('projects.settings');
         Route::post('/projects/{id}/settings', [HomeController::class, 'updateSettings'])->name('projects.updateSettings');
         Route::get('/projects/{id}/view-settings', [HomeController::class, 'viewSettings'])->name('projects.viewSettings');

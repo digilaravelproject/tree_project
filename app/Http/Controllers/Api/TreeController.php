@@ -12,8 +12,6 @@ use App\Models\Tree;
 use App\Models\District;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
-use Intervention\Image\Facades\Image;
-use Illuminate\Support\Facades\Log;
 
 class TreeController extends Controller
 {
@@ -107,7 +105,7 @@ class TreeController extends Controller
     //     print_r($request->all());die;
     //     // ✅ Step 1: Normalize input (object OR array)
     //     $trees = $request->json()->all();
-
+    
     //     if (isset($trees[0]) && is_array($trees[0])) {
     //         // Multiple records
     //         $treeDataList = $trees;
@@ -115,18 +113,18 @@ class TreeController extends Controller
     //         // Single record
     //         $treeDataList = [$trees];
     //     }
-
+    
     //     $createdTrees = [];
-
+    
     //     foreach ($treeDataList as $index => $treeData) {
-
+    
     //         // ✅ Step 2: Validate each tree
     //         $validator = Validator::make($treeData, [
     //             'user_id' => 'required',
     //             'tree_name' => 'required|string|max:255',
     //             'project_id' => 'required|integer|exists:projects,id',
     //         ]);
-
+    
     //         if ($validator->fails()) {
     //             return response()->json([
     //                 'status' => false,
@@ -134,7 +132,7 @@ class TreeController extends Controller
     //                 'errors' => $validator->errors()
     //             ], 422);
     //         }
-
+    
     //         // ✅ Step 3: Fetch project
     //         $project = Project::find($treeData['project_id']);
     //         if (!$project) {
@@ -143,17 +141,17 @@ class TreeController extends Controller
     //                 'message' => 'Invalid project selected.'
     //             ], 404);
     //         }
-
+    
     //         // ✅ Step 4: Check project tree limit
     //         $existingTreeCount = MtTree::where('project_id', $treeData['project_id'])->count();
-
+    
     //         if ($existingTreeCount >= $project->limit) {
     //             return response()->json([
     //                 'status' => false,
     //                 'message' => 'Tree creation limit exceeded for this project.'
     //             ], 409);
     //         }
-
+    
     //         // ✅ Step 5: Create Tree (NO IMAGE REQUIRED for RAW JSON)
     //         $tree = MtTree::create([
     //             'project_id' => $treeData['project_id'],
@@ -178,10 +176,10 @@ class TreeController extends Controller
     //             'longitude' => $treeData['longitude'] ?? null,
     //             'datetime' => $treeData['datetime'] ?? null,
     //         ]);
-
+    
     //         $createdTrees[] = $tree;
     //     }
-
+    
     //     // ✅ Step 6: Success Response
     //     return response()->json([
     //         'status' => true,
@@ -190,281 +188,133 @@ class TreeController extends Controller
     //         'data' => $createdTrees
     //     ], 201);
     // }
+    
+   public function store(Request $request)
+{
+    // ✅ Step 1: Normalize input (object OR array)
+    $trees = $request->json()->all();
 
-    //    public function store(Request $request)
-    // {
-    //     // ✅ Step 1: Normalize input (object OR array)
-    //     $trees = $request->json()->all();
+    if (isset($trees[0]) && is_array($trees[0])) {
+        // Multiple records
+        $treeDataList = $trees;
+    } else {
+        // Single record
+        $treeDataList = [$trees];
+    }
 
-    //     if (isset($trees[0]) && is_array($trees[0])) {
-    //         // Multiple records
-    //         $treeDataList = $trees;
-    //     } else {
-    //         // Single record
-    //         $treeDataList = [$trees];
-    //     }
+    $createdTrees = [];
 
-    //     $createdTrees = [];
+    foreach ($treeDataList as $index => $treeData) {
 
-    //     foreach ($treeDataList as $index => $treeData) {
+        // ✅ Step 2: Validate each tree
+        $validator = Validator::make($treeData, [
+            'user_id' => 'required',
+            'tree_name' => 'required|string|max:255',
+            'project_id' => 'required|integer|exists:projects,id',
+        ]);
 
-    //         // ✅ Step 2: Validate each tree
-    //         $validator = Validator::make($treeData, [
-    //             'user_id' => 'required',
-    //             'tree_name' => 'required|string|max:255',
-    //             'project_id' => 'required|integer|exists:projects,id',
-    //         ]);
-
-    //         if ($validator->fails()) {
-    //             return response()->json([
-    //                 'status' => false,
-    //                 'record' => $index,
-    //                 'errors' => $validator->errors()
-    //             ], 422);
-    //         }
-
-    //         // ✅ Step 3: Fetch project
-    //         $project = Project::find($treeData['project_id']);
-    //         if (!$project) {
-    //             return response()->json([
-    //                 'status' => false,
-    //                 'message' => 'Invalid project selected.'
-    //             ], 404);
-    //         }
-
-    //         // ✅ Step 4: Check project tree limit
-    //         $existingTreeCount = MtTree::where('project_id', $treeData['project_id'])->count();
-
-    //         if ($existingTreeCount >= $project->limit) {
-    //             return response()->json([
-    //                 'status' => false,
-    //                 'message' => 'Tree creation limit exceeded for this project.'
-    //             ], 409);
-    //         }
-
-    //         // ✅ Step 5: Handle Multiple Base64 Images
-    //         $savedImagesPaths = [];
-
-    //         // Input handle (array or string)
-    //         $imagesInput = $treeData['all_captured_images'] ?? $treeData['tree_image_upload'] ?? [];
-
-    //         if (is_string($imagesInput)) {
-    //             // Check if it's already a JSON string, if not, try to explode
-    //             $decoded = json_decode($imagesInput, true);
-    //             $imagesInput = is_array($decoded) ? $decoded : explode(',', $imagesInput);
-    //         }
-
-    //         foreach ((array)$imagesInput as $base64Image) {
-    //             if (!empty($base64Image)) {
-    //                 // Remove data:image/... prefix if exists
-    //                 if (preg_match('/^data:image\/(\w+);base64,/', $base64Image, $type)) {
-    //                     $base64Image = substr($base64Image, strpos($base64Image, ',') + 1);
-    //                 }
-
-    //                 $imageData = base64_decode($base64Image);
-
-    //                 if ($imageData !== false) {
-    //                     $fileName = 'tree_' . time() . '_' . uniqid() . '.jpg';
-    //                     $destinationPath = public_path('tree_images');
-
-    //                     if (!file_exists($destinationPath)) {
-    //                         mkdir($destinationPath, 0775, true);
-    //                     }
-
-    //                     file_put_contents($destinationPath . '/' . $fileName, $imageData);
-    //                     $savedImagesPaths[] = 'tree_images/' . $fileName;
-    //                 }
-    //             }
-    //         }
-
-    //         // Final format for database: ["path1.jpg", "path2.jpg"]
-    //         $finalJsonPath = json_encode($savedImagesPaths);
-
-    //         // ✅ Step 6: Create Tree
-    //         $tree = MtTree::create([
-    //             'project_id' => $treeData['project_id'],
-    //             'user_id' => $treeData['user_id'],
-    //             'ward_plot_no' => $treeData['ward_plot_no'] ?? null,
-    //             'tree_no' => $treeData['tree_no'] ?? null,
-    //             'tree_name' => $treeData['tree_name'],
-    //             'scientific_name' => $treeData['scientific_name'] ?? null,
-    //             'family' => $treeData['family'] ?? null,
-    //             'girth' => $treeData['girth'] ?? null,
-    //             'height' => $treeData['height'] ?? null,
-    //             'canopy' => $treeData['canopy'] ?? null,
-    //             'age' => $treeData['age'] ?? null,
-    //             'condition' => $treeData['condition'] ?? null,
-    //             'address' => $treeData['address'] ?? null,
-    //             'landmark' => $treeData['landmark'] ?? null,
-    //             'ownership' => $treeData['ownership'] ?? null,
-    //             'concern_person' => $treeData['concern_person'] ?? null,
-    //             'remark' => $treeData['remark'] ?? null,
-    //             'tree_image_upload' => $finalJsonPath, // Same Format (JSON)
-    //             'all_captured_images' => $finalJsonPath, // Same Format (JSON)
-    //             'latitude' => $treeData['latitude'] ?? null,
-    //             'longitude' => $treeData['longitude'] ?? null,
-    //             'datetime' => $treeData['datetime'] ?? null,
-    //         ]);
-
-    //         $createdTrees[] = $tree;
-    //     }
-
-    //     // ✅ Step 7: Success Response
-    //     return response()->json([
-    //         'status' => true,
-    //         'message' => 'Tree record(s) created successfully',
-    //         'count' => count($createdTrees),
-    //         'data' => $createdTrees
-    //     ], 201);
-    // }
-
-    public function store(Request $request)
-    {
-        // ✅ Step 1: Normalize input (object OR array)
-        $trees = $request->json()->all();
-
-        if (isset($trees[0]) && is_array($trees[0])) {
-            $treeDataList = $trees;
-        } else {
-            $treeDataList = [$trees];
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'record' => $index,
+                'errors' => $validator->errors()
+            ], 422);
         }
 
-        $createdTrees = [];
+        // ✅ Step 3: Fetch project
+        $project = Project::find($treeData['project_id']);
+        if (!$project) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Invalid project selected.'
+            ], 404);
+        }
 
-        foreach ($treeDataList as $index => $treeData) {
+        // ✅ Step 4: Check project tree limit
+        $existingTreeCount = MtTree::where('project_id', $treeData['project_id'])->count();
 
-            // ✅ Step 2: Validate each tree
-            $validator = Validator::make($treeData, [
-                'user_id'    => 'required',
-                'tree_name'  => 'required|string|max:255',
-                'project_id' => 'required|integer|exists:projects,id',
-            ]);
+        if ($existingTreeCount >= $project->limit) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Tree creation limit exceeded for this project.'
+            ], 409);
+        }
 
-            if ($validator->fails()) {
-                return response()->json([
-                    'status' => false,
-                    'record' => $index,
-                    'errors' => $validator->errors()
-                ], 422);
-            }
+        // ✅ Step 5: Handle Multiple Base64 Images
+        $savedImagesPaths = [];
+        
+        // Input handle (array or string)
+        $imagesInput = $treeData['all_captured_images'] ?? $treeData['tree_image_upload'] ?? [];
+        
+        if (is_string($imagesInput)) {
+            // Check if it's already a JSON string, if not, try to explode
+            $decoded = json_decode($imagesInput, true);
+            $imagesInput = is_array($decoded) ? $decoded : explode(',', $imagesInput);
+        }
 
-            // ✅ Step 3: Fetch project
-            $project = Project::find($treeData['project_id']);
-            if (!$project) {
-                return response()->json([
-                    'status'  => false,
-                    'message' => 'Invalid project selected.'
-                ], 404);
-            }
-
-            // ✅ Step 4: Check project tree limit (commented as before)
-            // $existingTreeCount = MtTree::where('project_id', $treeData['project_id'])->count();
-            // if ($existingTreeCount >= $project->limit) {
-            //     return response()->json([
-            //         'status'  => false,
-            //         'message' => 'Tree creation limit exceeded for this project.'
-            //     ], 409);
-            // }
-
-            // ✅ Step 5: Handle Multiple Base64 Images
-            $savedImagesPaths = [];
-
-            // Input handle (array or string)
-            $imagesInput = $treeData['all_captured_images'] ?? $treeData['tree_image_upload'] ?? [];
-
-            if (is_string($imagesInput)) {
-                $decoded     = json_decode($imagesInput, true);
-                $imagesInput = is_array($decoded) ? $decoded : explode(',', $imagesInput);
-            }
-
-            $destinationPath = public_path('tree_images');
-            if (!file_exists($destinationPath)) {
-                mkdir($destinationPath, 0775, true);
-            }
-
-            foreach ((array)$imagesInput as $base64Image) {
-                if (!empty($base64Image)) {
-
-                    // Remove data:image/... prefix if exists
-                    if (preg_match('/^data:image\/(\w+);base64,/', $base64Image, $type)) {
-                        $base64Image = substr($base64Image, strpos($base64Image, ',') + 1);
+        foreach ((array)$imagesInput as $base64Image) {
+            if (!empty($base64Image)) {
+                // Remove data:image/... prefix if exists
+                if (preg_match('/^data:image\/(\w+);base64,/', $base64Image, $type)) {
+                    $base64Image = substr($base64Image, strpos($base64Image, ',') + 1);
+                }
+                
+                $imageData = base64_decode($base64Image);
+                
+                if ($imageData !== false) {
+                    $fileName = 'tree_' . time() . '_' . uniqid() . '.jpg';
+                    $destinationPath = public_path('tree_images');
+                    
+                    if (!file_exists($destinationPath)) {
+                        mkdir($destinationPath, 0775, true);
                     }
-
-                    // ✅ Clean base64 string
-                    $base64Image = str_replace([' ', '\n', '\r'], '', trim($base64Image));
-
-                    // ✅ Strict base64 decode
-                    $imageData = base64_decode($base64Image, true);
-
-                    if ($imageData !== false && strlen($imageData) > 0) {
-                        $fileName = 'tree_' . time() . '_' . uniqid() . '.jpg';
-
-                        try {
-                            // ✅ Compress & Resize — size reduce hoga
-                            Image::make($imageData)
-                                ->resize(800, null, function ($constraint) {
-                                    $constraint->aspectRatio(); // Ratio same rahega
-                                    $constraint->upsize();      // Chhoti image aur chhoti nahi hogi
-                                })
-                                ->save($destinationPath . '/' . $fileName, 60); // 60% quality
-
-                            // echo '<pre>';
-                            // print_r($imageData);
-                            // die;
-
-                            $savedImagesPaths[] = 'tree_images/' . $fileName;
-
-                            Log::info("✅ Tree [{$index}] Image saved: {$fileName}");
-                        } catch (\Exception $e) {
-                            // ✅ Image fail ho toh bhi tree save hoga — skip image
-                            Log::error("❌ Tree [{$index}] Image failed: " . $e->getMessage());
-                        }
-                    } else {
-                        Log::warning("⚠️ Tree [{$index}] Invalid base64 — skip");
-                    }
+                    
+                    file_put_contents($destinationPath . '/' . $fileName, $imageData);
+                    $savedImagesPaths[] = 'tree_images/' . $fileName;
                 }
             }
-
-            // ✅ Final JSON path
-            $finalJsonPath = json_encode($savedImagesPaths);
-
-            // ✅ Step 6: Create Tree — same as original
-            $tree = MtTree::create([
-                'project_id'          => $treeData['project_id'],
-                'user_id'             => $treeData['user_id'],
-                'ward_plot_no'        => $treeData['ward_plot_no'] ?? null,
-                'tree_no'             => $treeData['tree_no'] ?? null,
-                'tree_name'           => $treeData['tree_name'],
-                'scientific_name'     => $treeData['scientific_name'] ?? null,
-                'family'              => $treeData['family'] ?? null,
-                'girth'               => $treeData['girth'] ?? null,
-                'height'              => $treeData['height'] ?? null,
-                'canopy'              => $treeData['canopy'] ?? null,
-                'age'                 => $treeData['age'] ?? null,
-                'condition'           => $treeData['condition'] ?? null,
-                'address'             => $treeData['address'] ?? null,
-                'landmark'            => $treeData['landmark'] ?? null,
-                'ownership'           => $treeData['ownership'] ?? null,
-                'concern_person'      => $treeData['concern_person'] ?? null,
-                'remark'              => $treeData['remark'] ?? null,
-                'tree_image_upload'   => $finalJsonPath, // Same Format (JSON)
-                'all_captured_images' => $finalJsonPath, // Same Format (JSON)
-                'latitude'            => $treeData['latitude'] ?? null,
-                'longitude'           => $treeData['longitude'] ?? null,
-                'datetime'            => $treeData['datetime'] ?? null,
-            ]);
-
-            $createdTrees[] = $tree;
         }
 
-        // ✅ Step 7: Success Response
-        return response()->json([
-            'status'  => true,
-            'message' => 'Tree record(s) created successfully',
-            'count'   => count($createdTrees),
-            'data'    => $createdTrees
-        ], 201);
+        // Final format for database: ["path1.jpg", "path2.jpg"]
+        $finalJsonPath = json_encode($savedImagesPaths);
+
+        // ✅ Step 6: Create Tree
+        $tree = MtTree::create([
+            'project_id' => $treeData['project_id'],
+            'user_id' => $treeData['user_id'],
+            'ward_plot_no' => $treeData['ward_plot_no'] ?? null,
+            'tree_no' => $treeData['tree_no'] ?? null,
+            'tree_name' => $treeData['tree_name'],
+            'scientific_name' => $treeData['scientific_name'] ?? null,
+            'family' => $treeData['family'] ?? null,
+            'girth' => $treeData['girth'] ?? null,
+            'height' => $treeData['height'] ?? null,
+            'canopy' => $treeData['canopy'] ?? null,
+            'age' => $treeData['age'] ?? null,
+            'condition' => $treeData['condition'] ?? null,
+            'address' => $treeData['address'] ?? null,
+            'landmark' => $treeData['landmark'] ?? null,
+            'ownership' => $treeData['ownership'] ?? null,
+            'concern_person' => $treeData['concern_person'] ?? null,
+            'remark' => $treeData['remark'] ?? null,
+            'tree_image_upload' => $finalJsonPath, // Same Format (JSON)
+            'all_captured_images' => $finalJsonPath, // Same Format (JSON)
+            'latitude' => $treeData['latitude'] ?? null,
+            'longitude' => $treeData['longitude'] ?? null,
+            'datetime' => $treeData['datetime'] ?? null,
+        ]);
+
+        $createdTrees[] = $tree;
     }
+
+    // ✅ Step 7: Success Response
+    return response()->json([
+        'status' => true,
+        'message' => 'Tree record(s) created successfully',
+        'count' => count($createdTrees),
+        'data' => $createdTrees
+    ], 201);
+}
 
     // ✅ Update Tree Record
     public function update(Request $request, $id)
@@ -574,35 +424,35 @@ class TreeController extends Controller
     }
 
     public function tree_on_project_id($project_id)
-    {
-        $trees = \App\Models\MtTree::where('project_id', $project_id)
-            ->latest()
-            ->get()
-            ->map(function ($tree) {
-                // ✅ Step 1: tree_image_upload ko hamesha empty string set karein
-                $tree->tree_image_upload = "";
+{
+    $trees = \App\Models\MtTree::where('project_id', $project_id)
+        ->latest()
+        ->get()
+        ->map(function ($tree) {
+            // ✅ Step 1: tree_image_upload ko hamesha empty string set karein
+            $tree->tree_image_upload = "";
 
-                // ✅ Step 2: Baaki JSON data decode karein
-                $tree->all_captured_images = json_decode($tree->all_captured_images, true);
+            // ✅ Step 2: Baaki JSON data decode karein
+            $tree->all_captured_images = json_decode($tree->all_captured_images, true);
 
-                // ✅ Step 3: Relations fetch karein (Tree Name, Scientific Name, Family)
-                $treeModel = Tree::where('id', $tree->tree_name)->first();
-                $tree->tree_name = $treeModel ? $treeModel->name : $tree->tree_name;
+            // ✅ Step 3: Relations fetch karein (Tree Name, Scientific Name, Family)
+            $treeModel = Tree::where('id', $tree->tree_name)->first();
+            $tree->tree_name = $treeModel ? $treeModel->name : $tree->tree_name;
 
-                $scientificModel = ScientificName::where('id', $tree->scientific_name)->first();
-                $tree->scientific_name = $scientificModel ? $scientificModel->scientific_name : $tree->scientific_name;
+            $scientificModel = ScientificName::where('id', $tree->scientific_name)->first();
+            $tree->scientific_name = $scientificModel ? $scientificModel->scientific_name : $tree->scientific_name;
 
-                $familyModel = Family::where('id', $tree->family)->first();
-                $tree->family = $familyModel ? $familyModel->family_name : $tree->family;
+            $familyModel = Family::where('id', $tree->family)->first();
+            $tree->family = $familyModel ? $familyModel->family_name : $tree->family;
 
-                return $tree;
-            });
+            return $tree;
+        });
 
-        return response()->json([
-            'status' => true,
-            'data' => $trees
-        ]);
-    }
+    return response()->json([
+        'status' => true,
+        'data' => $trees
+    ]);
+}
 
 
     // ✅ Get Single
@@ -683,7 +533,7 @@ class TreeController extends Controller
                 // Check 'extra_user' column for matching User ID
                 $projects = Project::where('extra_user', $user_id)->get();
                 $projectCount = $projects->count();
-
+                
                 // Count trees only within these specific projects
                 $projectIds = $projects->pluck('id');
                 $treeCount = MtTree::whereIn('project_id', $projectIds)->count();
@@ -719,6 +569,7 @@ class TreeController extends Controller
                     'district_count' => $districtCount,
                 ],
             ]);
+
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
