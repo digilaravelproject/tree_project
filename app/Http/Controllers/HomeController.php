@@ -504,6 +504,7 @@ class HomeController extends Controller
 
         $tree->tree_name = $tree->tree->name ?? $tree->tree_name;
         $tree->scientific_name = $tree->scientific->scientific_name ?? $tree->scientific_name;
+        $tree->family = $tree->familyRelation->family_name ?? $tree->family;
         $tree->all_captured_images = is_array($tree->all_captured_images)
             ? $tree->all_captured_images
             : (json_decode($tree->all_captured_images ?? '', true) ?? []);
@@ -540,7 +541,9 @@ class HomeController extends Controller
             $tree->longitude = $request->longitude;
             $tree->remark = $request->remark;
 
-            $existingImages = json_decode($tree->all_captured_images, true) ?? [];
+            $existingImages = is_array($tree->all_captured_images)
+                ? $tree->all_captured_images
+                : (json_decode($tree->all_captured_images ?? '', true) ?? []);
 
             if ($request->images_to_delete) {
                 $imagesToDelete = json_decode($request->images_to_delete, true);

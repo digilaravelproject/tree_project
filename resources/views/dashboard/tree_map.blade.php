@@ -75,6 +75,154 @@
             width: 60%;
             color: #333;
         }
+
+        .map-container-wrapper {
+            position: relative;
+            width: 100%;
+            height: 600px;
+        }
+
+        .map-layers-wrapper {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            z-index: 99;
+        }
+
+        .map-layers-trigger {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #fff;
+            border: none;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #555;
+            font-size: 20px;
+            transition: all 0.2s ease;
+        }
+
+        .map-layers-trigger:hover {
+            background-color: #f8f9fa;
+            color: #7cb342;
+        }
+
+        .map-layers-panel {
+            position: absolute;
+            top: 48px;
+            left: 0;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            padding: 15px;
+            width: 260px;
+            display: none;
+            z-index: 100;
+        }
+
+        .panel-section .section-title {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #777;
+            margin-bottom: 10px;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+
+        .type-grid {
+            display: flex;
+            gap: 10px;
+        }
+
+        .type-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .type-item span {
+            font-size: 11px;
+            margin-top: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .type-icon-wrapper {
+            width: 55px;
+            height: 55px;
+            border-radius: 8px;
+            border: 2px solid transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            transition: all 0.2s ease;
+        }
+
+        .type-item.active .type-icon-wrapper {
+            border-color: #7cb342;
+            box-shadow: 0 0 0 2px rgba(124, 179, 66, 0.2);
+        }
+
+        .roadmap-bg {
+            background-color: #e8f0fe;
+            color: #1a73e8;
+        }
+        .satellite-bg {
+            background-color: #e6f4ea;
+            color: #137333;
+        }
+        .terrain-bg {
+            background-color: #fdf4e7;
+            color: #b06000;
+        }
+
+        .details-grid {
+            display: flex;
+            gap: 15px;
+            justify-content: space-around;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .detail-item span {
+            font-size: 11px;
+            margin-top: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .detail-icon-circle {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background-color: #f1f3f4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #5f6368;
+            font-size: 16px;
+            transition: all 0.2s ease;
+        }
+
+        .detail-item.active .detail-icon-circle {
+            background-color: #e8f0fe;
+            color: #1a73e8;
+        }
     </style>
 
     <main>
@@ -147,7 +295,56 @@
                 <div class="col-12">
                     <div class="card">
                         <div class="card-body p-0">
-                            <div id="map" style="width: 100%; height: 600px; border-radius: 4px;"></div>
+                            <div class="map-container-wrapper">
+                                <div class="map-layers-wrapper">
+                                    <button type="button" class="map-layers-trigger" id="map-layers-btn" title="Map Type & Details">
+                                        <i class="ti ti-layers-difference"></i>
+                                    </button>
+                                    <div class="map-layers-panel" id="map-layers-panel">
+                                        <div class="panel-section">
+                                            <h6 class="section-title">Map Type</h6>
+                                            <div class="type-grid">
+                                                <div class="type-item" onclick="changeMapType('roadmap')" id="type-roadmap">
+                                                    <div class="type-icon-wrapper roadmap-bg">
+                                                        <i class="ti ti-map"></i>
+                                                    </div>
+                                                    <span>Default</span>
+                                                </div>
+                                                <div class="type-item active" onclick="changeMapType('hybrid')" id="type-hybrid">
+                                                    <div class="type-icon-wrapper satellite-bg">
+                                                        <i class="ti ti-satellite"></i>
+                                                    </div>
+                                                    <span>Satellite</span>
+                                                </div>
+                                                <div class="type-item" onclick="changeMapType('terrain')" id="type-terrain">
+                                                    <div class="type-icon-wrapper terrain-bg">
+                                                        <i class="ti ti-mountain"></i>
+                                                    </div>
+                                                    <span>Terrain</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="panel-section mt-3">
+                                            <h6 class="section-title">Map Details</h6>
+                                            <div class="details-grid">
+                                                <div class="detail-item" onclick="toggleMapDetail('traffic')" id="detail-traffic">
+                                                    <div class="detail-icon-circle"><i class="ti ti-traffic-cone"></i></div>
+                                                    <span>Traffic</span>
+                                                </div>
+                                                <div class="detail-item" onclick="toggleMapDetail('transit')" id="detail-transit">
+                                                    <div class="detail-icon-circle"><i class="ti ti-bus"></i></div>
+                                                    <span>Transit</span>
+                                                </div>
+                                                <div class="detail-item" onclick="toggleMapDetail('bicycling')" id="detail-bicycling">
+                                                    <div class="detail-icon-circle"><i class="ti ti-bike"></i></div>
+                                                    <span>Bicycling</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="map" style="width: 100%; height: 100%; border-radius: 4px;"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -209,11 +406,64 @@
             map = new google.maps.Map(document.getElementById('map'), {
                 zoom: 5,
                 center: defaultCenter,
-                mapTypeId: 'roadmap',
+                mapTypeId: 'hybrid', // Enable satellite view by default first time
                 mapTypeControl: true,
-                streetViewControl: false
+                mapTypeControlOptions: {
+                    style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
+                    position: google.maps.ControlPosition.TOP_LEFT
+                },
+                streetViewControl: true
             });
             infoWindow = new google.maps.InfoWindow();
+        }
+
+        let trafficLayer = null;
+        let transitLayer = null;
+        let bicyclingLayer = null;
+
+        // Toggle panel display
+        $(document).on('click', '#map-layers-btn', function(e) {
+            e.stopPropagation();
+            $('#map-layers-panel').toggle();
+        });
+
+        // Close panel when clicking outside
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('.map-layers-wrapper').length) {
+                $('#map-layers-panel').hide();
+            }
+        });
+
+        function changeMapType(type) {
+            if (map) {
+                map.setMapTypeId(type);
+                $('.type-item').removeClass('active');
+                $('#type-' + type).addClass('active');
+            }
+        }
+
+        function toggleMapDetail(layerName) {
+            if (!map) return;
+            
+            const $item = $('#detail-' + layerName);
+            const active = !$item.hasClass('active');
+            
+            if (active) {
+                $item.addClass('active');
+            } else {
+                $item.removeClass('active');
+            }
+
+            if (layerName === 'traffic') {
+                if (!trafficLayer) trafficLayer = new google.maps.TrafficLayer();
+                trafficLayer.setMap(active ? map : null);
+            } else if (layerName === 'transit') {
+                if (!transitLayer) transitLayer = new google.maps.TransitLayer();
+                transitLayer.setMap(active ? map : null);
+            } else if (layerName === 'bicycling') {
+                if (!bicyclingLayer) bicyclingLayer = new google.maps.BicyclingLayer();
+                bicyclingLayer.setMap(active ? map : null);
+            }
         }
 
         function loadMapData() {
