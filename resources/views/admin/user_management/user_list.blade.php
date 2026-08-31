@@ -28,7 +28,7 @@
                                             <th>Email</th>
                                             <th>Mobile Number</th>
                                             <th>Role</th>
-                                            <th>District</th>
+                                            <?php /*<th>District</th> */?>
                                             <th>Ward Number</th>
                                             <th>Gender</th>
                                             <th>Status</th>
@@ -56,7 +56,7 @@
                                                         <span class="badge" style="background-color: #7cb342;">{{ $role->name }}</span>
                                                     @endforeach
                                                 </td>
-                                                <td>{{ $user->district->district_name ?? 'N/A' }}</td>
+                                                <?php /* <td>{{ $user->district->district_name ?? 'N/A' }}</td> */?>
                                                 <td>{{ $user->ward_number ?? '-' }}</td>
                                                 <td>{{ $user->gender ?? '-' }}</td>
                                                 <td>

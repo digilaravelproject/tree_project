@@ -9,7 +9,9 @@ use Intervention\Image\Collection;
 class TextBlock extends Collection
 {
     /**
-     * Create new text block object.
+     * Create new text block object
+     *
+     * @return void
      */
     public function __construct(string $text)
     {
@@ -19,7 +21,7 @@ class TextBlock extends Collection
     }
 
     /**
-     * Return array of lines in text block.
+     * Return array of lines in text block
      *
      * @return array<Line>
      */
@@ -29,7 +31,7 @@ class TextBlock extends Collection
     }
 
     /**
-     * Set lines of the text block.
+     * Set lines of the text block
      *
      * @param array<Line> $lines
      */
@@ -41,9 +43,9 @@ class TextBlock extends Collection
     }
 
     /**
-     * Get line by given key.
+     * Get line by given key
      */
-    public function line(string|int|float $key): ?Line
+    public function line(mixed $key): ?Line
     {
         if (!array_key_exists($key, $this->lines())) {
             return null;
@@ -53,7 +55,7 @@ class TextBlock extends Collection
     }
 
     /**
-     * Return line with most characters of text block.
+     * Return line with most characters of text block
      */
     public function longestLine(): Line
     {

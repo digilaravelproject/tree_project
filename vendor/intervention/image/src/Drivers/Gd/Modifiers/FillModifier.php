@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace Intervention\Image\Drivers\Gd\Modifiers;
 
-use Intervention\Image\Exceptions\ModifierException;
-use Intervention\Image\Exceptions\StateException;
+use Intervention\Image\Exceptions\RuntimeException;
 use Intervention\Image\Interfaces\FrameInterface;
 use Intervention\Image\Interfaces\ImageInterface;
 use Intervention\Image\Interfaces\SpecializedInterface;
@@ -17,15 +16,10 @@ class FillModifier extends GenericFillModifier implements SpecializedInterface
      * {@inheritdoc}
      *
      * @see ModifierInterface::apply()
-     *
-     * @throws ModifierException
-     * @throws StateException
      */
     public function apply(ImageInterface $image): ImageInterface
     {
-        $color = $this->driver()->colorProcessor($image)->export(
-            $this->color()
-        );
+        $color = $this->color($image);
 
         foreach ($image as $frame) {
             if ($this->hasPosition()) {
@@ -39,8 +33,15 @@ class FillModifier extends GenericFillModifier implements SpecializedInterface
     }
 
     /**
-     * @throws ModifierException
+     * @throws RuntimeException
      */
+    private function color(ImageInterface $image): int
+    {
+        return $this->driver()->colorProcessor($image->colorspace())->colorToNative(
+            $this->driver()->handleInput($this->color)
+        );
+    }
+
     private function floodFillWithColor(FrameInterface $frame, int $color): void
     {
         imagefill(
@@ -51,9 +52,6 @@ class FillModifier extends GenericFillModifier implements SpecializedInterface
         );
     }
 
-    /**
-     * @throws ModifierException
-     */
     private function fillAllWithColor(FrameInterface $frame, int $color): void
     {
         imagealphablending($frame->native(), true);

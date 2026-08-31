@@ -9,7 +9,9 @@ use Intervention\Image\Drivers\SpecializableModifier;
 class ColorizeModifier extends SpecializableModifier
 {
     /**
-     * Create new modifier object.
+     * Create new modifier object
+     *
+     * @return void
      */
     public function __construct(
         public int $red = 0,

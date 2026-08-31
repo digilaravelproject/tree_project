@@ -29,7 +29,17 @@ class ProjectTreeExport implements FromCollection, WithHeadings, WithMapping
             $query->whereIn('id', $this->tree_ids);
         }
 
-        return $query->get();
+        $trees = $query->get();
+        
+        // Sort trees with robust numeric comparison
+        $sorted = $trees->sort(function($a, $b) {
+            $numA = intval(preg_replace('/[^0-9]/', '', $a->tree_no));
+            $numB = intval(preg_replace('/[^0-9]/', '', $b->tree_no));
+            if ($numA == $numB) return 0;
+            return ($numA < $numB) ? -1 : 1;
+        });
+        
+        return $sorted->values();
     }
 
     public function map($tree): array
@@ -51,6 +61,9 @@ class ProjectTreeExport implements FromCollection, WithHeadings, WithMapping
             $tree->age,
             $tree->condition,
             $tree->owner_name ?? $tree->ownership, 
+            $tree->concern_person, // ✅ Added Concern Person
+            $tree->landmark,       // ✅ Added Landmark
+            $tree->remark,         // ✅ Added Remark
             $tree->latitude,
             $tree->longitude,
             $tree->created_at,
@@ -66,11 +79,14 @@ class ProjectTreeExport implements FromCollection, WithHeadings, WithMapping
             'Scientific Name',
             'Family',
             'Girth (cm)',
-            'Height (m)',
-            'Canopy (m)',
+            'Height (ft)',       // ✅ Changed (m) to (ft)
+            'Canopy (ft)',       // ✅ Changed (m) to (ft)
             'Age',
             'Condition',
             'Ownership',
+            'Concern Person',    // ✅ Added Heading
+            'Landmark',          // ✅ Added Heading
+            'Remark',            // ✅ Added Heading
             'Latitude',
             'Longitude',
             'Date Added',

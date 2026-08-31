@@ -74,12 +74,18 @@ class KmlController extends Controller
 
         // Icon Link (Google Earth Standard Green Tree Icon)
         $icon = $dom->createElement('Icon');
-        // CHANGED: Using 'pal2/icon4.png' which is the standard Green Tree/Park icon
         $href = $dom->createElement('href', 'http://maps.google.com/mapfiles/kml/pal2/icon4.png'); 
         $icon->appendChild($href);
         
         $iconStyle->appendChild($icon);
         $style->appendChild($iconStyle);
+
+        // ✅ NEW ADDITION: LabelStyle to hide the text next to the icon on the map (scale = 0)
+        $labelStyle = $dom->createElement('LabelStyle');
+        $labelScale = $dom->createElement('scale', '0'); // 0 means hide text
+        $labelStyle->appendChild($labelScale);
+        $style->appendChild($labelStyle);
+
         $document->appendChild($style);
         // ==========================================
 
@@ -149,6 +155,8 @@ class KmlController extends Controller
             $styleUrl = $dom->createElement('styleUrl', '#' . $styleId);
             $placemark->appendChild($styleUrl);
 
+            // Is name tag ki wajah se sidebar aur popup me naam dikhega, 
+            // par LabelStyle scale 0 ki wajah se map par nahi dikhega.
             $nameNode = $dom->createElement('name', "Tree " . $tree->tree_no);
             $placemark->appendChild($nameNode);
 

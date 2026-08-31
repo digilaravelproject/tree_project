@@ -9,6 +9,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Traits\HasRoles;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class User extends Authenticatable
 {
@@ -25,7 +26,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
-        'phone', // This is your Mobile Number
+        'phone',
         'password',
         'role_id',
         'designation',
@@ -92,6 +93,28 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Legacy support: return profile_image as URL if it's accessed via JSON
+     */
+    public function toArray()
+    {
+        $array = parent::toArray();
+        if (isset($array['profile_image']) && $array['profile_image']) {
+            if (!filter_var($array['profile_image'], FILTER_VALIDATE_URL)) {
+                // Use asset() with the path stored in DB
+                $fullUrl = asset('storage/' . $array['profile_image']);
+
+                // Detect if /public/ prefix is needed for shared hosting
+                if (str_contains(request()->getRequestUri(), '/public/') && !str_contains($fullUrl, '/public/storage/')) {
+                    $fullUrl = str_replace('/storage/', '/public/storage/', $fullUrl);
+                }
+
+                $array['profile_image'] = $fullUrl;
+            }
+        }
+        return $array;
     }
 
     public function district()

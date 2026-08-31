@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Intervention\Image;
 
+use Closure;
+use Intervention\Image\Exceptions\RuntimeException;
+use Traversable;
 use Intervention\Image\Analyzers\ColorspaceAnalyzer;
 use Intervention\Image\Analyzers\HeightAnalyzer;
 use Intervention\Image\Analyzers\PixelColorAnalyzer;
@@ -12,13 +15,19 @@ use Intervention\Image\Analyzers\ProfileAnalyzer;
 use Intervention\Image\Analyzers\ResolutionAnalyzer;
 use Intervention\Image\Analyzers\WidthAnalyzer;
 use Intervention\Image\Encoders\AutoEncoder;
+use Intervention\Image\Encoders\AvifEncoder;
+use Intervention\Image\Encoders\BmpEncoder;
 use Intervention\Image\Encoders\FileExtensionEncoder;
 use Intervention\Image\Encoders\FilePathEncoder;
-use Intervention\Image\Encoders\FormatEncoder;
+use Intervention\Image\Encoders\GifEncoder;
+use Intervention\Image\Encoders\HeicEncoder;
+use Intervention\Image\Encoders\Jpeg2000Encoder;
+use Intervention\Image\Encoders\JpegEncoder;
 use Intervention\Image\Encoders\MediaTypeEncoder;
+use Intervention\Image\Encoders\PngEncoder;
+use Intervention\Image\Encoders\TiffEncoder;
+use Intervention\Image\Encoders\WebpEncoder;
 use Intervention\Image\Exceptions\EncoderException;
-use Intervention\Image\Exceptions\InvalidArgumentException;
-use Intervention\Image\Exceptions\NotSupportedException;
 use Intervention\Image\Geometry\Bezier;
 use Intervention\Image\Geometry\Circle;
 use Intervention\Image\Geometry\Ellipse;
@@ -37,7 +46,6 @@ use Intervention\Image\Interfaces\CollectionInterface;
 use Intervention\Image\Interfaces\ColorInterface;
 use Intervention\Image\Interfaces\ColorspaceInterface;
 use Intervention\Image\Interfaces\CoreInterface;
-use Intervention\Image\Interfaces\DrawableInterface;
 use Intervention\Image\Interfaces\DriverInterface;
 use Intervention\Image\Interfaces\EncodedImageInterface;
 use Intervention\Image\Interfaces\EncoderInterface;
@@ -45,20 +53,17 @@ use Intervention\Image\Interfaces\FontInterface;
 use Intervention\Image\Interfaces\FrameInterface;
 use Intervention\Image\Interfaces\ImageInterface;
 use Intervention\Image\Interfaces\ModifierInterface;
-use Intervention\Image\Interfaces\OriginInterface;
 use Intervention\Image\Interfaces\ProfileInterface;
 use Intervention\Image\Interfaces\ResolutionInterface;
 use Intervention\Image\Interfaces\SizeInterface;
-use Intervention\Image\Modifiers\OrientModifier;
-use Intervention\Image\Modifiers\FillTransparentAreasModifier;
+use Intervention\Image\Modifiers\AlignRotationModifier;
+use Intervention\Image\Modifiers\BlendTransparencyModifier;
 use Intervention\Image\Modifiers\BlurModifier;
 use Intervention\Image\Modifiers\BrightnessModifier;
 use Intervention\Image\Modifiers\ColorizeModifier;
 use Intervention\Image\Modifiers\ColorspaceModifier;
 use Intervention\Image\Modifiers\ContainModifier;
 use Intervention\Image\Modifiers\ContrastModifier;
-use Intervention\Image\Modifiers\CoverDownModifier;
-use Intervention\Image\Modifiers\CoverModifier;
 use Intervention\Image\Modifiers\CropModifier;
 use Intervention\Image\Modifiers\DrawBezierModifier;
 use Intervention\Image\Modifiers\DrawEllipseModifier;
@@ -67,17 +72,20 @@ use Intervention\Image\Modifiers\DrawPixelModifier;
 use Intervention\Image\Modifiers\DrawPolygonModifier;
 use Intervention\Image\Modifiers\DrawRectangleModifier;
 use Intervention\Image\Modifiers\FillModifier;
+use Intervention\Image\Modifiers\CoverDownModifier;
+use Intervention\Image\Modifiers\CoverModifier;
 use Intervention\Image\Modifiers\FlipModifier;
+use Intervention\Image\Modifiers\FlopModifier;
 use Intervention\Image\Modifiers\GammaModifier;
-use Intervention\Image\Modifiers\GrayscaleModifier;
-use Intervention\Image\Modifiers\InsertModifier;
+use Intervention\Image\Modifiers\GreyscaleModifier;
 use Intervention\Image\Modifiers\InvertModifier;
-use Intervention\Image\Modifiers\ContainDownModifier;
+use Intervention\Image\Modifiers\PadModifier;
 use Intervention\Image\Modifiers\PixelateModifier;
+use Intervention\Image\Modifiers\PlaceModifier;
 use Intervention\Image\Modifiers\ProfileModifier;
-use Intervention\Image\Modifiers\ReduceColorsModifier;
+use Intervention\Image\Modifiers\ProfileRemovalModifier;
+use Intervention\Image\Modifiers\QuantizeColorsModifier;
 use Intervention\Image\Modifiers\RemoveAnimationModifier;
-use Intervention\Image\Modifiers\RemoveProfileModifier;
 use Intervention\Image\Modifiers\ResizeCanvasModifier;
 use Intervention\Image\Modifiers\ResizeCanvasRelativeModifier;
 use Intervention\Image\Modifiers\ResizeDownModifier;
@@ -91,30 +99,26 @@ use Intervention\Image\Modifiers\SliceAnimationModifier;
 use Intervention\Image\Modifiers\TextModifier;
 use Intervention\Image\Modifiers\TrimModifier;
 use Intervention\Image\Typography\FontFactory;
-use Throwable;
-use Traversable;
 
 final class Image implements ImageInterface
 {
     /**
-     * Origin containing the source from which the image was originally created.
+     * The origin from which the image was created
      */
-    private OriginInterface $origin;
+    private Origin $origin;
 
     /**
-     * Exif data of the current image.
-     */
-    private CollectionInterface $exif;
-
-    /**
-     * Create new instance.
+     * Create new instance
+     *
+     * @throws RuntimeException
+     * @return void
      */
     public function __construct(
         private DriverInterface $driver,
         private CoreInterface $core,
+        private CollectionInterface $exif = new Collection()
     ) {
         $this->origin = new Origin();
-        $this->exif = new Collection();
     }
 
     /**
@@ -142,7 +146,7 @@ final class Image implements ImageInterface
      *
      * @see ImageInterface::origin()
      */
-    public function origin(): OriginInterface
+    public function origin(): Origin
     {
         return $this->origin;
     }
@@ -152,7 +156,7 @@ final class Image implements ImageInterface
      *
      * @see ImageInterface::setOrigin()
      */
-    public function setOrigin(OriginInterface $origin): ImageInterface
+    public function setOrigin(Origin $origin): ImageInterface
     {
         $this->origin = $origin;
 
@@ -192,7 +196,7 @@ final class Image implements ImageInterface
     /**
      * {@inheritdoc}
      *
-     * @see ImageInterface::removeAnimation()
+     * @see ImageInterface::removeAnimation(
      */
     public function removeAnimation(int|string $position = 0): ImageInterface
     {
@@ -260,7 +264,7 @@ final class Image implements ImageInterface
      */
     public function modify(ModifierInterface $modifier): ImageInterface
     {
-        return $this->driver()->specializeModifier($modifier)->apply($this);
+        return $this->driver->specialize($modifier)->apply($this);
     }
 
     /**
@@ -270,30 +274,38 @@ final class Image implements ImageInterface
      */
     public function analyze(AnalyzerInterface $analyzer): mixed
     {
-        return $this->driver()->specializeAnalyzer($analyzer)->analyze($this);
+        return $this->driver->specialize($analyzer)->analyze($this);
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see ImageInterface::encode()
+     */
+    public function encode(EncoderInterface $encoder = new AutoEncoder()): EncodedImageInterface
+    {
+        return $this->driver->specialize($encoder)->encode($this);
     }
 
     /**
      * {@inheritdoc}
      *
      * @see ImageInterface::save()
-     *
-     * @throws EncoderException
      */
     public function save(?string $path = null, mixed ...$options): ImageInterface
     {
-        if (is_null($path) && is_null($this->origin()->filePath())) {
-            throw new EncoderException('Unable to determine path for saving');
-        }
-
         $path = is_null($path) ? $this->origin()->filePath() : $path;
+
+        if (is_null($path)) {
+            throw new EncoderException('Could not determine file path to save.');
+        }
 
         try {
             // try to determine encoding format by file extension of the path
-            $encoded = $this->encode(new FilePathEncoder($path, ...$options));
+            $encoded = $this->encodeByPath($path, ...$options);
         } catch (EncoderException) {
             // fallback to encoding format by media type
-            $encoded = $this->encode(new MediaTypeEncoder(null, ...$options));
+            $encoded = $this->encodeByMediaType(null, ...$options);
         }
 
         $encoded->save($path);
@@ -325,12 +337,10 @@ final class Image implements ImageInterface
      * {@inheritdoc}
      *
      * @see ImageInterface::size()
-     *
-     * @throws InvalidArgumentException
      */
     public function size(): SizeInterface
     {
-        return new Size($this->width(), $this->height());
+        return new Rectangle($this->width(), $this->height());
     }
 
     /**
@@ -376,19 +386,19 @@ final class Image implements ImageInterface
     /**
      * {@inheritdoc}
      *
-     * @see ImageInterface::colorAt()
+     * @see ImageInterface::pickColor()
      */
-    public function colorAt(int $x, int $y, int $frame = 0): ColorInterface
+    public function pickColor(int $x, int $y, int $frame_key = 0): ColorInterface
     {
-        return $this->analyze(new PixelColorAnalyzer($x, $y, $frame));
+        return $this->analyze(new PixelColorAnalyzer($x, $y, $frame_key));
     }
 
     /**
      * {@inheritdoc}
      *
-     * @see ImageInterface::colorsAt()
+     * @see ImageInterface::pickColors()
      */
-    public function colorsAt(int $x, int $y): CollectionInterface
+    public function pickColors(int $x, int $y): CollectionInterface
     {
         return $this->analyze(new PixelColorsAnalyzer($x, $y));
     }
@@ -396,29 +406,37 @@ final class Image implements ImageInterface
     /**
      * {@inheritdoc}
      *
-     * @see ImageInterface::backgroundColor()
+     * @see ImageInterface::blendingColor()
      */
-    public function backgroundColor(): ColorInterface
+    public function blendingColor(): ColorInterface
     {
-        return $this->driver()->decodeColor(
-            $this->driver()->config()->backgroundColor
+        return $this->driver()->handleInput(
+            $this->driver()->config()->blendingColor
         );
     }
 
     /**
      * {@inheritdoc}
      *
-     * @see ImageInterface::setBackgroundColor()
-     *
-     * @throws InvalidArgumentException
+     * @see ImageInterface::setBlendingColor()
      */
-    public function setBackgroundColor(string|ColorInterface $color): ImageInterface
+    public function setBlendingColor(mixed $color): ImageInterface
     {
         $this->driver()->config()->setOptions(
-            backgroundColor: $this->driver()->decodeColor($color)
+            blendingColor: $this->driver()->handleInput($color)
         );
 
         return $this;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see ImageInterface::blendTransparency()
+     */
+    public function blendTransparency(mixed $color = null): ImageInterface
+    {
+        return $this->modify(new BlendTransparencyModifier($color));
     }
 
     /**
@@ -448,7 +466,7 @@ final class Image implements ImageInterface
      */
     public function removeProfile(): ImageInterface
     {
-        return $this->modify(new RemoveProfileModifier());
+        return $this->modify(new ProfileRemovalModifier());
     }
 
     /**
@@ -456,9 +474,9 @@ final class Image implements ImageInterface
      *
      * @see ImageInterface::reduceColors()
      */
-    public function reduceColors(int $limit, null|string|ColorInterface $background = null): ImageInterface
+    public function reduceColors(int $limit, mixed $background = 'transparent'): ImageInterface
     {
-        return $this->modify(new ReduceColorsModifier($limit, $background));
+        return $this->modify(new QuantizeColorsModifier($limit, $background));
     }
 
     /**
@@ -466,9 +484,9 @@ final class Image implements ImageInterface
      *
      * @see ImageInterface::sharpen()
      */
-    public function sharpen(int $level = 10): ImageInterface
+    public function sharpen(int $amount = 10): ImageInterface
     {
-        return $this->modify(new SharpenModifier($level));
+        return $this->modify(new SharpenModifier($amount));
     }
 
     /**
@@ -494,11 +512,11 @@ final class Image implements ImageInterface
     /**
      * {@inheritdoc}
      *
-     * @see ImageInterface::grayscale()
+     * @see ImageInterface::greyscale()
      */
-    public function grayscale(): ImageInterface
+    public function greyscale(): ImageInterface
     {
-        return $this->modify(new GrayscaleModifier());
+        return $this->modify(new GreyscaleModifier());
     }
 
     /**
@@ -546,9 +564,19 @@ final class Image implements ImageInterface
      *
      * @see ImageInterface::flip()
      */
-    public function flip(Direction $direction = Direction::HORIZONTAL): ImageInterface
+    public function flip(): ImageInterface
     {
-        return $this->modify(new FlipModifier($direction));
+        return $this->modify(new FlipModifier());
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see ImageInterface::flop()
+     */
+    public function flop(): ImageInterface
+    {
+        return $this->modify(new FlopModifier());
     }
 
     /**
@@ -556,9 +584,9 @@ final class Image implements ImageInterface
      *
      * @see ImageInterface::blur()
      */
-    public function blur(int $level = 5): ImageInterface
+    public function blur(int $amount = 5): ImageInterface
     {
-        return $this->modify(new BlurModifier($level));
+        return $this->modify(new BlurModifier($amount));
     }
 
     /**
@@ -566,7 +594,7 @@ final class Image implements ImageInterface
      *
      * @see ImageInterface::rotate()
      */
-    public function rotate(float $angle, null|string|ColorInterface $background = null): ImageInterface
+    public function rotate(float $angle, mixed $background = 'ffffff'): ImageInterface
     {
         return $this->modify(new RotateModifier($angle, $background));
     }
@@ -578,7 +606,7 @@ final class Image implements ImageInterface
      */
     public function orient(): ImageInterface
     {
-        return $this->modify(new OrientModifier());
+        return $this->modify(new AlignRotationModifier());
     }
 
     /**
@@ -586,13 +614,13 @@ final class Image implements ImageInterface
      *
      * @see ImageInterface::text()
      */
-    public function text(string $text, int $x, int $y, callable|FontInterface $font): ImageInterface
+    public function text(string $text, int $x, int $y, callable|Closure|FontInterface $font): ImageInterface
     {
         return $this->modify(
             new TextModifier(
                 $text,
                 new Point($x, $y),
-                FontFactory::build($font),
+                call_user_func(new FontFactory($font)),
             ),
         );
     }
@@ -601,198 +629,132 @@ final class Image implements ImageInterface
      * {@inheritdoc}
      *
      * @see ImageInterface::resize()
-     *
-     * @throws InvalidArgumentException
      */
-    public function resize(null|int|Fraction $width = null, null|int|Fraction $height = null): ImageInterface
+    public function resize(?int $width = null, ?int $height = null): ImageInterface
     {
-        return $this->modify(new ResizeModifier(...$this->resolveDimension($width, $height)));
+        return $this->modify(new ResizeModifier($width, $height));
     }
 
     /**
      * {@inheritdoc}
      *
      * @see ImageInterface::resizeDown()
-     *
-     * @throws InvalidArgumentException
      */
-    public function resizeDown(null|int|Fraction $width = null, null|int|Fraction $height = null): ImageInterface
+    public function resizeDown(?int $width = null, ?int $height = null): ImageInterface
     {
-        return $this->modify(new ResizeDownModifier(...$this->resolveDimension($width, $height)));
+        return $this->modify(new ResizeDownModifier($width, $height));
     }
 
     /**
      * {@inheritdoc}
      *
      * @see ImageInterface::scale()
-     *
-     * @throws InvalidArgumentException
      */
-    public function scale(null|int|Fraction $width = null, null|int|Fraction $height = null): ImageInterface
+    public function scale(?int $width = null, ?int $height = null): ImageInterface
     {
-        return $this->modify(new ScaleModifier(...$this->resolveDimension($width, $height)));
+        return $this->modify(new ScaleModifier($width, $height));
     }
 
     /**
      * {@inheritdoc}
      *
      * @see ImageInterface::scaleDown()
-     *
-     * @throws InvalidArgumentException
      */
-    public function scaleDown(null|int|Fraction $width = null, null|int|Fraction $height = null): ImageInterface
+    public function scaleDown(?int $width = null, ?int $height = null): ImageInterface
     {
-        return $this->modify(new ScaleDownModifier(...$this->resolveDimension($width, $height)));
+        return $this->modify(new ScaleDownModifier($width, $height));
     }
 
     /**
      * {@inheritdoc}
      *
      * @see ImageInterface::cover()
-     *
-     * @throws InvalidArgumentException
      */
-    public function cover(
-        int|Fraction $width,
-        int|Fraction $height,
-        string|Alignment $alignment = Alignment::CENTER,
-    ): ImageInterface {
-        return $this->modify(new CoverModifier(...[
-            ...$this->resolveDimension($width, $height),
-            ...['alignment' => $alignment]
-        ]));
+    public function cover(int $width, int $height, string $position = 'center'): ImageInterface
+    {
+        return $this->modify(new CoverModifier($width, $height, $position));
     }
 
     /**
      * {@inheritdoc}
      *
      * @see ImageInterface::coverDown()
-     *
-     * @throws InvalidArgumentException
      */
-    public function coverDown(
-        int|Fraction $width,
-        int|Fraction $height,
-        string|Alignment $alignment = Alignment::CENTER,
-    ): ImageInterface {
-        return $this->modify(new CoverDownModifier(...[
-            ...$this->resolveDimension($width, $height),
-            ...['alignment' => $alignment]
-        ]));
+    public function coverDown(int $width, int $height, string $position = 'center'): ImageInterface
+    {
+        return $this->modify(new CoverDownModifier($width, $height, $position));
     }
 
     /**
      * {@inheritdoc}
      *
      * @see ImageInterface::resizeCanvas()
-     *
-     * @throws InvalidArgumentException
      */
     public function resizeCanvas(
-        null|int|Fraction $width = null,
-        null|int|Fraction $height = null,
-        null|string|ColorInterface $background = null,
-        string|Alignment $alignment = Alignment::CENTER
+        ?int $width = null,
+        ?int $height = null,
+        mixed $background = 'ffffff',
+        string $position = 'center'
     ): ImageInterface {
-        return $this->modify(new ResizeCanvasModifier(...[
-            ...$this->resolveDimension($width, $height),
-            ...[
-                'background' => $background,
-                'alignment' => $alignment,
-            ]
-        ]));
+        return $this->modify(new ResizeCanvasModifier($width, $height, $background, $position));
     }
 
     /**
      * {@inheritdoc}
      *
      * @see ImageInterface::resizeCanvasRelative()
-     *
-     * @throws InvalidArgumentException
      */
     public function resizeCanvasRelative(
-        null|int|Fraction $width = null,
-        null|int|Fraction $height = null,
-        null|string|ColorInterface $background = null,
-        string|Alignment $alignment = Alignment::CENTER
+        ?int $width = null,
+        ?int $height = null,
+        mixed $background = 'ffffff',
+        string $position = 'center'
     ): ImageInterface {
-        return $this->modify(new ResizeCanvasRelativeModifier(...[
-            ...$this->resolveDimension($width, $height),
-            ...[
-                'background' => $background,
-                'alignment' => $alignment,
-            ]
-        ]));
+        return $this->modify(new ResizeCanvasRelativeModifier($width, $height, $background, $position));
     }
 
     /**
      * {@inheritdoc}
      *
-     * @see ImageInterface::containDown()
-     *
-     * @throws InvalidArgumentException
+     * @see ImageInterface::padDown()
      */
-    public function containDown(
-        int|Fraction $width,
-        int|Fraction $height,
-        null|string|ColorInterface $background = null,
-        string|Alignment $alignment = Alignment::CENTER
+    public function pad(
+        int $width,
+        int $height,
+        mixed $background = 'ffffff',
+        string $position = 'center'
     ): ImageInterface {
-        return $this->modify(new ContainDownModifier(...[
-            ...$this->resolveDimension($width, $height),
-            ...[
-                'background' => $background,
-                'alignment' => $alignment,
-            ]
-        ]));
+        return $this->modify(new PadModifier($width, $height, $background, $position));
     }
 
     /**
      * {@inheritdoc}
      *
-     * @see ImageInterface::contain()
-     *
-     * @throws InvalidArgumentException
+     * @see ImageInterface::pad()
      */
     public function contain(
-        int|Fraction $width,
-        int|Fraction $height,
-        null|string|ColorInterface $background = null,
-        string|Alignment $alignment = Alignment::CENTER
+        int $width,
+        int $height,
+        mixed $background = 'ffffff',
+        string $position = 'center'
     ): ImageInterface {
-        return $this->modify(new ContainModifier(...[
-            ...$this->resolveDimension($width, $height),
-            ...[
-                'background' => $background,
-                'alignment' => $alignment,
-            ]
-        ]));
+        return $this->modify(new ContainModifier($width, $height, $background, $position));
     }
 
     /**
      * {@inheritdoc}
      *
      * @see ImageInterface::crop()
-     *
-     * @throws InvalidArgumentException
      */
     public function crop(
-        int|Fraction $width,
-        int|Fraction $height,
-        int $x = 0,
-        int $y = 0,
-        null|string|ColorInterface $background = null,
-        string|Alignment $alignment = Alignment::TOP_LEFT
+        int $width,
+        int $height,
+        int $offset_x = 0,
+        int $offset_y = 0,
+        mixed $background = 'ffffff',
+        string $position = 'top-left'
     ): ImageInterface {
-        return $this->modify(new CropModifier(...[
-            ...$this->resolveDimension($width, $height),
-            ...[
-                'x' => $x,
-                'y' => $y,
-                'background' => $background,
-                'alignment' => $alignment,
-            ]
-        ]));
+        return $this->modify(new CropModifier($width, $height, $offset_x, $offset_y, $background, $position));
     }
 
     /**
@@ -808,16 +770,16 @@ final class Image implements ImageInterface
     /**
      * {@inheritdoc}
      *
-     * @see ImageInterface::insert()
+     * @see ImageInterface::place()
      */
-    public function insert(
-        mixed $image,
-        int $x = 0,
-        int $y = 0,
-        string|Alignment $alignment = Alignment::TOP_LEFT,
-        float $transparency = 1
+    public function place(
+        mixed $element,
+        string $position = 'top-left',
+        int $offset_x = 0,
+        int $offset_y = 0,
+        int $opacity = 100
     ): ImageInterface {
-        return $this->modify(new InsertModifier($image, $x, $y, $alignment, $transparency));
+        return $this->modify(new PlaceModifier($element, $position, $offset_x, $offset_y, $opacity));
     }
 
     /**
@@ -825,7 +787,7 @@ final class Image implements ImageInterface
      *
      * @see ImageInterface::fill()
      */
-    public function fill(string|ColorInterface $color, ?int $x = null, ?int $y = null): ImageInterface
+    public function fill(mixed $color, ?int $x = null, ?int $y = null): ImageInterface
     {
         return $this->modify(
             new FillModifier(
@@ -838,19 +800,9 @@ final class Image implements ImageInterface
     /**
      * {@inheritdoc}
      *
-     * @see ImageInterface::fillTransparentAreas()
-     */
-    public function fillTransparentAreas(null|string|ColorInterface $color = null): ImageInterface
-    {
-        return $this->modify(new FillTransparentAreasModifier($color));
-    }
-
-    /**
-     * {@inheritdoc}
-     *
      * @see ImageInterface::drawPixel()
      */
-    public function drawPixel(int $x, int $y, string|ColorInterface $color): ImageInterface
+    public function drawPixel(int $x, int $y, mixed $color): ImageInterface
     {
         return $this->modify(new DrawPixelModifier(new Point($x, $y), $color));
     }
@@ -859,14 +811,12 @@ final class Image implements ImageInterface
      * {@inheritdoc}
      *
      * @see ImageInterface::drawRectangle()
-     *
-     * @throws InvalidArgumentException
      */
-    public function drawRectangle(callable|Rectangle $rectangle): ImageInterface
+    public function drawRectangle(int $x, int $y, callable|Closure|Rectangle $init): ImageInterface
     {
         return $this->modify(
             new DrawRectangleModifier(
-                RectangleFactory::build($rectangle)
+                call_user_func(new RectangleFactory(new Point($x, $y), $init)),
             ),
         );
     }
@@ -876,11 +826,11 @@ final class Image implements ImageInterface
      *
      * @see ImageInterface::drawEllipse()
      */
-    public function drawEllipse(callable|Ellipse $ellipse): ImageInterface
+    public function drawEllipse(int $x, int $y, callable|Closure|Ellipse $init): ImageInterface
     {
         return $this->modify(
             new DrawEllipseModifier(
-                EllipseFactory::build($ellipse)
+                call_user_func(new EllipseFactory(new Point($x, $y), $init)),
             ),
         );
     }
@@ -890,12 +840,12 @@ final class Image implements ImageInterface
      *
      * @see ImageInterface::drawCircle()
      */
-    public function drawCircle(callable|Circle $circle): ImageInterface
+    public function drawCircle(int $x, int $y, callable|Closure|Circle $init): ImageInterface
     {
         return $this->modify(
             new DrawEllipseModifier(
-                CircleFactory::build($circle)
-            )
+                call_user_func(new CircleFactory(new Point($x, $y), $init)),
+            ),
         );
     }
 
@@ -904,11 +854,11 @@ final class Image implements ImageInterface
      *
      * @see ImageInterface::drawPolygon()
      */
-    public function drawPolygon(callable|Polygon $polygon): ImageInterface
+    public function drawPolygon(callable|Closure|Polygon $init): ImageInterface
     {
         return $this->modify(
             new DrawPolygonModifier(
-                PolygonFactory::build($polygon)
+                call_user_func(new PolygonFactory($init)),
             ),
         );
     }
@@ -918,11 +868,11 @@ final class Image implements ImageInterface
      *
      * @see ImageInterface::drawLine()
      */
-    public function drawLine(callable|Line $line): ImageInterface
+    public function drawLine(callable|Closure|Line $init): ImageInterface
     {
         return $this->modify(
             new DrawLineModifier(
-                LineFactory::build($line)
+                call_user_func(new LineFactory($init)),
             ),
         );
     }
@@ -932,11 +882,11 @@ final class Image implements ImageInterface
      *
      * @see ImageInterface::drawBezier()
      */
-    public function drawBezier(callable|Bezier $bezier): ImageInterface
+    public function drawBezier(callable|Closure|Bezier $init): ImageInterface
     {
         return $this->modify(
             new DrawBezierModifier(
-                BezierFactory::build($bezier)
+                call_user_func(new BezierFactory($init)),
             ),
         );
     }
@@ -944,98 +894,169 @@ final class Image implements ImageInterface
     /**
      * {@inheritdoc}
      *
-     * @see ImageInterface::draw()
+     * @see ImageInterface::encodeByMediaType()
      */
-    public function draw(DrawableInterface $drawable): ImageInterface
+    public function encodeByMediaType(null|string|MediaType $type = null, mixed ...$options): EncodedImageInterface
     {
-        return $this->modify(match ($drawable::class) {
-            Rectangle::class => new DrawRectangleModifier($drawable),
-            Circle::class, Ellipse::class => new DrawEllipseModifier($drawable),
-            Bezier::class => new DrawBezierModifier($drawable),
-            Line::class => new DrawLineModifier($drawable),
-            Polygon::class => new DrawPolygonModifier($drawable),
-            default => throw new NotSupportedException('No modifier for ' . $drawable::class . ' found'),
-        });
+        return $this->encode(new MediaTypeEncoder($type, ...$options));
     }
 
     /**
      * {@inheritdoc}
      *
-     * @see ImageInterface::encode()
+     * @see ImageInterface::encodeByExtension()
      */
-    public function encode(?EncoderInterface $encoder = null): EncodedImageInterface
-    {
-        return $this->driver()->specializeEncoder(
-            $encoder ?: new AutoEncoder(),
-        )->encode($this);
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @see ImageInterface::encodeUsingFormat()
-     */
-    public function encodeUsingFormat(Format $format, mixed ...$options): EncodedImageInterface
-    {
-        return $this->encode(new FormatEncoder($format, ...$options));
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @see ImageInterface::encodeUsingMediaType()
-     */
-    public function encodeUsingMediaType(string|MediaType $mediaType, mixed ...$options): EncodedImageInterface
-    {
-        return $this->encode(new MediaTypeEncoder($mediaType, ...$options));
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @see ImageInterface::encodeUsingFileExtension()
-     */
-    public function encodeUsingFileExtension(
-        string|FileExtension $fileExtension,
-        mixed ...$options,
+    public function encodeByExtension(
+        null|string|FileExtension $extension = null,
+        mixed ...$options
     ): EncodedImageInterface {
-        return $this->encode(new FileExtensionEncoder($fileExtension, ...$options));
+        return $this->encode(new FileExtensionEncoder($extension, ...$options));
     }
 
     /**
      * {@inheritdoc}
      *
-     * @see ImageInterface::encodeUsingPath()
+     * @see ImageInterface::encodeByPath()
      */
-    public function encodeUsingPath(string $path, mixed ...$options,): EncodedImageInterface
+    public function encodeByPath(?string $path = null, mixed ...$options): EncodedImageInterface
     {
         return $this->encode(new FilePathEncoder($path, ...$options));
     }
 
     /**
-     * Build resizing dimension from various inputs including fractions based lengths.
+     * {@inheritdoc}
      *
-     * @throws InvalidArgumentException
-     * @return array{'width': ?int, 'height': ?int}
+     * @see ImageInterface::toJpeg()
      */
-    private function resolveDimension(null|int|Fraction $width, null|int|Fraction $height): array
+    public function toJpeg(mixed ...$options): EncodedImageInterface
     {
-        if ($width instanceof Fraction || $height instanceof Fraction) {
-            $size = $this->size();
-            $width = ($width instanceof Fraction) ? (int) round($width->of($size->width())) : $width;
-            $height = ($height instanceof Fraction) ? (int) round($height->of($size->height())) : $height;
-        }
-
-        return [
-            'width' => $width,
-            'height' => $height,
-        ];
+        return $this->encode(new JpegEncoder(...$options));
     }
 
     /**
-     * Show debug info for the current image.
+     * Alias of self::toJpeg()
      *
-     * @return array<string, ?int>
+     * @throws RuntimeException
+     */
+    public function toJpg(mixed ...$options): EncodedImageInterface
+    {
+        return $this->toJpeg(...$options);
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see ImageInterface::toJpeg()
+     */
+    public function toJpeg2000(mixed ...$options): EncodedImageInterface
+    {
+        return $this->encode(new Jpeg2000Encoder(...$options));
+    }
+
+    /**
+     * ALias of self::toJpeg2000()
+     *
+     * @throws RuntimeException
+     */
+    public function toJp2(mixed ...$options): EncodedImageInterface
+    {
+        return $this->toJpeg2000(...$options);
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see ImageInterface::toPng()
+     */
+    public function toPng(mixed ...$options): EncodedImageInterface
+    {
+        return $this->encode(new PngEncoder(...$options));
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see ImageInterface::toGif()
+     */
+    public function toGif(mixed ...$options): EncodedImageInterface
+    {
+        return $this->encode(new GifEncoder(...$options));
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see ImageInterface::toWebp()
+     */
+    public function toWebp(mixed ...$options): EncodedImageInterface
+    {
+        return $this->encode(new WebpEncoder(...$options));
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see ImageInterface::toBitmap()
+     */
+    public function toBitmap(mixed ...$options): EncodedImageInterface
+    {
+        return $this->encode(new BmpEncoder(...$options));
+    }
+
+    /**
+     * Alias if self::toBitmap()
+     *
+     * @throws RuntimeException
+     */
+    public function toBmp(mixed ...$options): EncodedImageInterface
+    {
+        return $this->toBitmap(...$options);
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see ImageInterface::toAvif()
+     */
+    public function toAvif(mixed ...$options): EncodedImageInterface
+    {
+        return $this->encode(new AvifEncoder(...$options));
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see ImageInterface::toTiff()
+     */
+    public function toTiff(mixed ...$options): EncodedImageInterface
+    {
+        return $this->encode(new TiffEncoder(...$options));
+    }
+
+    /**
+     * Alias of self::toTiff()
+     *
+     * @throws RuntimeException
+     */
+    public function toTif(mixed ...$options): EncodedImageInterface
+    {
+        return $this->toTiff(...$options);
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see ImageInterface::toHeic()
+     */
+    public function toHeic(mixed ...$options): EncodedImageInterface
+    {
+        return $this->encode(new HeicEncoder(...$options));
+    }
+
+    /**
+     * Show debug info for the current image
+     *
+     * @return array<string, int>
      */
     public function __debugInfo(): array
     {
@@ -1044,16 +1065,13 @@ final class Image implements ImageInterface
                 'width' => $this->width(),
                 'height' => $this->height(),
             ];
-        } catch (Throwable) {
-            return [
-                'width' => null,
-                'height' => null,
-            ];
+        } catch (RuntimeException) {
+            return [];
         }
     }
 
     /**
-     * Clone image.
+     * Clone image
      */
     public function __clone(): void
     {

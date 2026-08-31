@@ -119,15 +119,18 @@
                                                         </a>
 
                                                         <form action="{{ route('projects.delete', $project->id) }}"
-                                                            method="POST" style="display:inline-block;">
+                                                            method="POST" id="delete-form-{{ $project->id }}"
+                                                            style="display:inline-block;">
                                                             @csrf
                                                             @method('DELETE')
-                                                            <button type="submit"
+                                                            <button type="button"
                                                                 class="btn btn-light-danger icon-btn b-r-4 btn-sm"
-                                                                onclick="return confirm('Are you sure to delete this project?')">
+                                                                title="Delete Project"
+                                                                onclick="confirmDelete({{ $project->id }}, '{{ addslashes($project->project_name) }}')">
                                                                 <i class="ti ti-trash"></i>
                                                             </button>
                                                         </form>
+
                                                     </div>
                                                 </td>
                                             </tr>
@@ -140,5 +143,26 @@
                 </div>
             </div>
         </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <script>
+            function confirmDelete(id, name) {
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: "You are about to delete the project: " + name +
+                        ". All related trees and settings will be permanently deleted!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Yes, delete it!',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        document.getElementById('delete-form-' + id).submit();
+                    }
+                });
+            }
+        </script>
     </main>
 @endsection

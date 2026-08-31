@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace Intervention\Image\Drivers\Imagick\Modifiers;
 
 use ImagickDraw;
-use Intervention\Image\Exceptions\InvalidArgumentException;
-use Intervention\Image\Exceptions\ModifierException;
-use Intervention\Image\Exceptions\StateException;
+use RuntimeException;
+use Intervention\Image\Exceptions\GeometryException;
 use Intervention\Image\Interfaces\ImageInterface;
 use Intervention\Image\Interfaces\SpecializedInterface;
 use Intervention\Image\Modifiers\DrawBezierModifier as GenericDrawBezierModifier;
@@ -15,34 +14,33 @@ use Intervention\Image\Modifiers\DrawBezierModifier as GenericDrawBezierModifier
 class DrawBezierModifier extends GenericDrawBezierModifier implements SpecializedInterface
 {
     /**
-     * @throws InvalidArgumentException
-     * @throws ModifierException
-     * @throws StateException
+     * @throws RuntimeException
+     * @throws GeometryException
      */
     public function apply(ImageInterface $image): ImageInterface
     {
         if ($this->drawable->count() !== 3 && $this->drawable->count() !== 4) {
-            throw new InvalidArgumentException('You must specify either 3 or 4 points to create a bezier curve');
+            throw new GeometryException('You must specify either 3 or 4 points to create a bezier curve');
         }
 
         $drawing = new ImagickDraw();
 
         if ($this->drawable->hasBackgroundColor()) {
-            $backgroundColor = $this->driver()->colorProcessor($image)->export(
+            $background_color = $this->driver()->colorProcessor($image->colorspace())->colorToNative(
                 $this->backgroundColor()
             );
         } else {
-            $backgroundColor = 'transparent';
+            $background_color = 'transparent';
         }
 
-        $drawing->setFillColor($backgroundColor);
+        $drawing->setFillColor($background_color);
 
         if ($this->drawable->hasBorder() && $this->drawable->borderSize() > 0) {
-            $borderColor = $this->driver()->colorProcessor($image)->export(
+            $border_color = $this->driver()->colorProcessor($image->colorspace())->colorToNative(
                 $this->borderColor()
             );
 
-            $drawing->setStrokeColor($borderColor);
+            $drawing->setStrokeColor($border_color);
             $drawing->setStrokeWidth($this->drawable->borderSize());
         }
 
@@ -71,12 +69,7 @@ class DrawBezierModifier extends GenericDrawBezierModifier implements Specialize
         $drawing->pathFinish();
 
         foreach ($image as $frame) {
-            $result = $frame->native()->drawImage($drawing);
-            if ($result === false) {
-                throw new ModifierException(
-                    'Failed to apply ' . self::class . ', unable to draw bezier curve',
-                );
-            }
+            $frame->native()->drawImage($drawing);
         }
 
         return $image;

@@ -29,6 +29,70 @@ class HomeController extends Controller
     {
         return view('index');
     }
+    
+    // ==========================================
+    // ✅ DATABASE CLEANUP FUNCTION ✅
+    // ==========================================
+    public function cleanDatabase()
+    {
+        try {
+            DB::beginTransaction();
+
+            // 1. Valid Projects aur Trees ki IDs nikal lo
+            $validProjectIds = \App\Models\Project::pluck('id')->toArray();
+            $validTreeIds = \App\Models\MtTree::pluck('id')->toArray();
+
+            // 2. Un Paid Trees ko hatao jinka Tree ab 'mt_trees' me nahi hai
+            if (!empty($validTreeIds)) {
+                \App\Models\UserPaidTree::whereNotIn('mt_tree_id', $validTreeIds)->delete();
+            } else {
+                \App\Models\UserPaidTree::truncate(); // Agar ek bhi tree nahi bacha toh sab clean
+            }
+
+            // 3. Un Settings aur Trees ko hatao jinka Project ab 'projects' me nahi hai
+            if (!empty($validProjectIds)) {
+                \App\Models\ProjectSetting::whereNotIn('project_id', $validProjectIds)->delete();
+                \App\Models\MtTree::whereNotIn('project_id', $validProjectIds)->delete();
+            } else {
+                \App\Models\ProjectSetting::truncate();
+                \App\Models\MtTree::truncate();
+            }
+
+            // 4. MtTrees delete hone ke baad, bache hue valid trees ki list update karo
+            $updatedValidTreeIds = \App\Models\MtTree::pluck('id')->toArray();
+
+            // 5. UserFreeTree (JSON) ko saaf karo
+            $freeRecords = \App\Models\UserFreeTree::all();
+            foreach ($freeRecords as $record) {
+                $currentIds = $record->tree_ids ?? [];
+                
+                if (!empty($currentIds)) {
+                    // Sirf wahi IDs rakho jo naye $updatedValidTreeIds me hain
+                    $updatedIds = array_values(array_intersect($currentIds, $updatedValidTreeIds));
+                    
+                    if (count($currentIds) !== count($updatedIds)) {
+                        $record->tree_ids = $updatedIds;
+                        $record->used_count = count($updatedIds);
+                        $record->save();
+                    }
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success', 
+                'message' => 'Database ekdum clean ho gaya hai! Saara faltu (orphaned) data delete kar diya gaya.'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            return response()->json([
+                'status' => 'error', 
+                'message' => 'Error aayi: ' . $e->getMessage()
+            ]);
+        }
+    }
 
     public function home()
     {
@@ -107,7 +171,7 @@ class HomeController extends Controller
             'company_name' => 'required|string|max:255',
             'field_officer_name' => 'required|array',
             'field_officer_name.*' => 'exists:users,id',
-            'limit' => 'required|numeric|min:1',
+            'ward_no'=>'required',
         ]);
 
         Project::create([
@@ -116,7 +180,7 @@ class HomeController extends Controller
             'client_name' => $request->client_name,
             'company_name' => $request->company_name,
             'field_officer_id' => json_encode($request->field_officer_name),
-            'limit' => $request->limit,
+            'ward_no' => $request->ward_no,
         ]);
 
         return redirect()->route('project.list')->with('success', 'Project created successfully!');
@@ -194,7 +258,7 @@ class HomeController extends Controller
             'company_name' => 'nullable|string|max:255',
             'field_officer_id' => 'required|array',
             'field_officer_id.*' => 'exists:users,id',
-            'limit' => 'required|numeric|min:1',
+            'ward_no' => 'required|numeric|min:1',
         ]);
 
         $project->update([
@@ -203,7 +267,7 @@ class HomeController extends Controller
             'state_id' => $request->state_id,
             'company_name' => $request->company_name,
             'field_officer_id' => json_encode($request->field_officer_id),
-            'limit' => $request->limit,
+            'ward_no' => $request->ward_no,
         ]);
 
         return redirect()->route('project.list')->with('success', 'Project updated successfully.');
