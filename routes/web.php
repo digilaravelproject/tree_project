@@ -29,6 +29,7 @@ Route::get('/generate-hash', function () {
 });
 
 Route::get('/clean-database', [HomeController::class, 'cleanDatabase']);
+Route::get('/delete-orphaned-trees', [HomeController::class, 'deleteOrphanedTrees']);
 
 Route::get('/linkstorage', function () {
     Artisan::call('storage:link');
@@ -163,6 +164,7 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['can:map'])->group(function () {
         // Route::get('/tree/map', [HomeController::class, 'tree_map'])->name('tree.map');
         Route::get('/tree/map', [MapController::class, 'tree_map'])->name('tree.map');
+        Route::get('/projects/{id}/wards', [MapController::class, 'getProjectWards'])->name('projects.wards');
     });
     Route::get('/Distribution/Tracking', [HomeController::class, 'Distribution_Tracking'])->name('distribution.tracking');
     Route::middleware(['can:master'])->group(function () {

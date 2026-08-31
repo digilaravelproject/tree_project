@@ -137,9 +137,32 @@ class MapController extends Controller
         $projects = Project::select('id', 'project_name')->orderBy('project_name')->get();
 
         // Get distinct values for filters
-        $wards = MtTree::distinct()->pluck('ward_plot_no')->filter();
-        $ownerships = MtTree::distinct()->pluck('ownership')->filter();
+        $wards = MtTree::distinct()
+            ->whereNotNull('ward_plot_no')
+            ->where('ward_plot_no', '!=', '')
+            ->orderBy('ward_plot_no', 'asc')
+            ->pluck('ward_plot_no');
+        $ownerships = MtTree::distinct()
+            ->whereNotNull('ownership')
+            ->where('ownership', '!=', '')
+            ->orderBy('ownership', 'asc')
+            ->pluck('ownership');
 
         return view('dashboard.tree_map', compact('page_title', 'projects', 'wards', 'ownerships'));
+    }
+
+    public function getProjectWards($projectId)
+    {
+        $wards = MtTree::where('project_id', $projectId)
+            ->whereNotNull('ward_plot_no')
+            ->where('ward_plot_no', '!=', '')
+            ->distinct()
+            ->orderBy('ward_plot_no', 'asc')
+            ->pluck('ward_plot_no');
+            
+        return response()->json([
+            'success' => true,
+            'wards' => $wards
+        ]);
     }
 }

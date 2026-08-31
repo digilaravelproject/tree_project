@@ -5,6 +5,66 @@
 @endsection
 
 @section('content')
+    <style>
+        .location-input-wrap {
+            position: relative;
+        }
+
+        .use-location-btn {
+            position: absolute;
+            right: 10px;
+            top: 8px;
+            border: none;
+            background: #fff;
+            height: 30px;
+            width: 30px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #7cb342;
+            font-size: 18px;
+            z-index: 10;
+        }
+
+        .use-location-btn:hover {
+            background-color: #f8f9fa;
+            color: #558b2f;
+        }
+
+        .use-location-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .location-feedback {
+            margin-top: 5px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .auto-filled-select {
+            background-color: #f8f9fa;
+        }
+
+        .use-location-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(0, 0, 0, 0.2);
+            border-top-color: #7cb342;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
     <!-- Body main section starts -->
     <main>
         <div class="container-fluid">
@@ -86,6 +146,8 @@
                                             <option value="">Select Tree</option>
                                             @foreach ($allTrees as $treeItem)
                                                 <option value="{{ $treeItem->id }}"
+                                                    data-scientific="{{ $treeItem->related_scientific_id }}"
+                                                    data-family="{{ $treeItem->related_family_id }}"
                                                     {{ old('tree_name', $tree->tree_id) == $treeItem->id ? 'selected' : '' }}>
                                                     {{ $treeItem->name }}
                                                 </option>
@@ -99,9 +161,9 @@
                                     <!-- Scientific Name (Dropdown) -->
                                     <div class="col-md-6 mb-3">
                                         <label for="scientific_name" class="form-label">Scientific Name</label>
-                                        <select class="form-select @error('scientific_name') is-invalid @enderror"
-                                            id="scientific_name" name="scientific_name">
-                                            <option value="">Select Scientific Name</option>
+                                        <select class="form-select auto-filled-select @error('scientific_name') is-invalid @enderror"
+                                            id="scientific_name" name="scientific_name" style="pointer-events: none;" tabindex="-1">
+                                            <option value="">(Auto Filled)</option>
                                             @foreach ($allScientific as $scientific)
                                                 <option value="{{ $scientific->id }}"
                                                     {{ old('scientific_name', $tree->scientific_id) == $scientific->id ? 'selected' : '' }}>
@@ -117,9 +179,9 @@
                                     <!-- Family (Dropdown) -->
                                     <div class="col-md-6 mb-3">
                                         <label for="family" class="form-label">Family</label>
-                                        <select class="form-select @error('family') is-invalid @enderror" id="family"
-                                            name="family">
-                                            <option value="">Select Family</option>
+                                        <select class="form-select auto-filled-select @error('family') is-invalid @enderror" id="family"
+                                            name="family" style="pointer-events: none;" tabindex="-1">
+                                            <option value="">(Auto Filled)</option>
                                             @foreach ($allFamilies as $familyItem)
                                                 <option value="{{ $familyItem->id }}"
                                                     {{ old('family', $tree->family_id) == $familyItem->id ? 'selected' : '' }}>
@@ -205,9 +267,18 @@
                                     <!-- Address -->
                                     <div class="col-md-12 mb-3">
                                         <label for="address" class="form-label">Address</label>
-                                        <textarea class="form-control @error('address') is-invalid @enderror" id="address" name="address" rows="2">{{ old('address', $tree->address) }}</textarea>
+                                        <div class="location-input-wrap">
+                                            <textarea class="form-control @error('address') is-invalid @enderror" id="address" name="address" rows="2"
+                                                placeholder="Enter address manually or use the location icon..." style="padding-right: 45px;">{{ old('address', $tree->address) }}</textarea>
+
+                                            <button type="button" id="use-location-btn" class="use-location-btn"
+                                                title="Get Current Location">
+                                                <i id="use-location-icon" class="ti ti-map-pin"></i>
+                                            </button>
+                                        </div>
+                                        <div id="location-feedback" class="location-feedback text-muted"></div>
                                         @error('address')
-                                            <div class="invalid-feedback">{{ $message }}</div>
+                                            <div class="invalid-feedback d-block">{{ $message }}</div>
                                         @enderror
                                     </div>
 
@@ -290,7 +361,7 @@
                                                                 style="height: 200px; object-fit: cover; width: 100%;">
                                                             <button type="button"
                                                                 class="btn btn-danger btn-sm position-absolute top-0 end-0 m-2"
-                                                                onclick="removeImage('{{ $image }}', {{ $index }})">
+                                                                onclick="removeImage(this, '{{ $image }}', {{ $index }})">
                                                                 <i class="ti ti-trash"></i>
                                                             </button>
                                                         </div>
@@ -344,15 +415,94 @@
         <script>
             let imagesToDelete = [];
 
-            function removeImage(imagePath, index) {
+            function removeImage(btn, imagePath, index) {
                 if (confirm('Are you sure you want to remove this image?')) {
                     imagesToDelete.push(imagePath);
                     document.getElementById('images_to_delete').value = JSON.stringify(imagesToDelete);
 
-                    // Hide the image container
-                    event.target.closest('.col-md-3').style.display = 'none';
+                    // Hide the image container using JQuery
+                    $(btn).closest('.col-md-3').hide();
                 }
             }
+
+            $(document).ready(function() {
+                // AUTO-FILL SCIENTIFIC & FAMILY NAME
+                $('#tree_name').on('change', function() {
+                    var $selected = $(this).find(':selected');
+                    var sciId = $selected.data('scientific');
+                    var famId = $selected.data('family');
+
+                    if (sciId) $('#scientific_name').val(sciId).trigger('change');
+                    else $('#scientific_name').val('').trigger('change');
+
+                    if (famId) $('#family').val(famId).trigger('change');
+                    else $('#family').val('').trigger('change');
+                });
+
+                // LOCATION AUTO-DETECT
+                $(document).on('click', '#use-location-btn', function(e) {
+                    e.preventDefault();
+                    const $btn = $(this);
+                    const $icon = $('#use-location-icon');
+                    const $feedback = $('#location-feedback');
+
+                    if (!navigator.geolocation) {
+                        $feedback.removeClass('text-success').addClass('text-danger').text(
+                            'Browser not supported.');
+                        return;
+                    }
+
+                    $btn.prop('disabled', true);
+                    $icon.removeClass('ti ti-map-pin').html('<span class="use-location-spinner"></span>');
+                    $feedback.removeClass('text-danger text-success').text('Detecting location...');
+
+                    navigator.geolocation.getCurrentPosition(
+                        function(position) {
+                            const lat = position.coords.latitude;
+                            const lng = position.coords.longitude;
+                            $('#latitude').val(lat);
+                            $('#longitude').val(lng);
+
+                            $.ajax({
+                                url: "{{ route('location.auto-detect') }}",
+                                type: "POST",
+                                data: {
+                                    latitude: lat,
+                                    longitude: lng,
+                                    _token: "{{ csrf_token() }}"
+                                },
+                                success: function(res) {
+                                    if (res.success) {
+                                        $('#address').val(res.full_address || res.display_name);
+                                        $feedback.removeClass('text-danger').addClass(
+                                            'text-success').text('Location found!');
+                                    } else {
+                                        $feedback.removeClass('text-success').addClass(
+                                            'text-danger').text('Address not found.');
+                                    }
+                                },
+                                error: function() {
+                                    $feedback.removeClass('text-success').addClass(
+                                        'text-danger').text('Server error.');
+                                },
+                                complete: function() {
+                                    $btn.prop('disabled', false);
+                                    $icon.html('').addClass('ti ti-map-pin');
+                                }
+                            });
+                        },
+                        function(error) {
+                            $feedback.removeClass('text-success').addClass('text-danger').text(
+                                'Location access denied.');
+                            $btn.prop('disabled', false);
+                            $icon.html('').addClass('ti ti-map-pin');
+                        }, {
+                            enableHighAccuracy: true,
+                            timeout: 10000
+                        }
+                    );
+                });
+            });
         </script>
     @endpush
 @endsection

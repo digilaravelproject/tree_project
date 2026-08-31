@@ -163,9 +163,42 @@
         let map;
         let markers = [];
         let infoWindow;
+        const initialWards = @json($wards->toArray());
 
         $(document).ready(function() {
-            // Document ready - no date filters used
+            // Project selection change listener
+            $('#project_id').on('change', function() {
+                const projectId = $(this).val();
+                const $wardSelect = $('#ward_plot_no');
+                
+                if (projectId) {
+                    $wardSelect.html('<option value="">Loading Wards...</option>');
+                    $.ajax({
+                        url: "/projects/" + projectId + "/wards",
+                        type: "GET",
+                        success: function(response) {
+                            if (response.success) {
+                                $wardSelect.html('<option value="">Select Ward</option>');
+                                response.wards.forEach(ward => {
+                                    $wardSelect.append('<option value="' + ward + '">' + ward + '</option>');
+                                });
+                            } else {
+                                $wardSelect.html('<option value="">Select Ward</option>');
+                            }
+                        },
+                        error: function() {
+                            console.error('Error fetching wards');
+                            $wardSelect.html('<option value="">Select Ward</option>');
+                        }
+                    });
+                } else {
+                    // Restore initial wards when no project is selected
+                    $wardSelect.html('<option value="">Select Ward</option>');
+                    initialWards.forEach(ward => {
+                        $wardSelect.append('<option value="' + ward + '">' + ward + '</option>');
+                    });
+                }
+            });
         });
 
         function initMap() {

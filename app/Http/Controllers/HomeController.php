@@ -94,6 +94,83 @@ class HomeController extends Controller
         }
     }
 
+    // ==========================================
+    // ✅ DELETE ORPHANED TREES FUNCTION (PROJECT NOT EXIST) ✅
+    // ==========================================
+    public function deleteOrphanedTrees()
+    {
+        try {
+            DB::beginTransaction();
+
+            // 1. Get all valid project IDs
+            $validProjectIds = \App\Models\Project::pluck('id')->toArray();
+
+            // 2. Find MtTree records whose project_id is not in validProjectIds (or is null)
+            $query = \App\Models\MtTree::query();
+            if (!empty($validProjectIds)) {
+                $query->whereNotIn('project_id', $validProjectIds)->orWhereNull('project_id');
+            }
+            
+            $orphanedTrees = $query->get();
+            $orphanedTreeIds = $orphanedTrees->pluck('id')->toArray();
+            $deletedCount = count($orphanedTreeIds);
+
+            if ($deletedCount > 0) {
+                // Delete related UserPaidTree records
+                \App\Models\UserPaidTree::whereIn('mt_tree_id', $orphanedTreeIds)->delete();
+
+                // Clean UserFreeTree records (JSON list of IDs)
+                $freeRecords = \App\Models\UserFreeTree::all();
+                foreach ($freeRecords as $record) {
+                    $currentIds = $record->tree_ids ?? [];
+                    if (!empty($currentIds)) {
+                        $updatedIds = array_values(array_diff($currentIds, $orphanedTreeIds));
+                        if (count($currentIds) !== count($updatedIds)) {
+                            $record->tree_ids = $updatedIds;
+                            $record->used_count = count($updatedIds);
+                            $record->save();
+                        }
+                    }
+                }
+
+                // Delete the physical tree images if any
+                foreach ($orphanedTrees as $tree) {
+                    $images = [];
+                    if (!empty($tree->all_captured_images)) {
+                        $images = is_string($tree->all_captured_images)
+                            ? json_decode($tree->all_captured_images, true)
+                            : $tree->all_captured_images;
+                    }
+                    if (is_array($images)) {
+                        foreach ($images as $img) {
+                            $filePath = public_path($img);
+                            if (file_exists($filePath) && is_file($filePath)) {
+                                @unlink($filePath);
+                            }
+                        }
+                    }
+                }
+
+                // Delete the MtTree records
+                \App\Models\MtTree::whereIn('id', $orphanedTreeIds)->delete();
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => "Successfully deleted {$deletedCount} orphaned tree records and their related data."
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function home()
     {
         $page_title = 'Dashboard';
@@ -235,8 +312,60 @@ class HomeController extends Controller
     public function destroy($id)
     {
         $project = Project::findOrFail($id);
-        $project->delete();
-        return redirect()->route('project.list')->with('success', 'Project deleted successfully.');
+        
+        DB::transaction(function () use ($project) {
+            // 1. Get associated MtTree records
+            $trees = MtTree::where('project_id', $project->id)->get();
+            $treeIds = $trees->pluck('id')->toArray();
+
+            if (!empty($treeIds)) {
+                // Delete UserPaidTree records
+                \App\Models\UserPaidTree::whereIn('mt_tree_id', $treeIds)->delete();
+
+                // Clean UserFreeTree records
+                $freeRecords = \App\Models\UserFreeTree::all();
+                foreach ($freeRecords as $record) {
+                    $currentIds = $record->tree_ids ?? [];
+                    if (!empty($currentIds)) {
+                        $updatedIds = array_values(array_diff($currentIds, $treeIds));
+                        if (count($currentIds) !== count($updatedIds)) {
+                            $record->tree_ids = $updatedIds;
+                            $record->used_count = count($updatedIds);
+                            $record->save();
+                        }
+                    }
+                }
+
+                // Delete physical tree images
+                foreach ($trees as $tree) {
+                    $images = [];
+                    if (!empty($tree->all_captured_images)) {
+                        $images = is_string($tree->all_captured_images)
+                            ? json_decode($tree->all_captured_images, true)
+                            : $tree->all_captured_images;
+                    }
+                    if (is_array($images)) {
+                        foreach ($images as $img) {
+                            $filePath = public_path($img);
+                            if (file_exists($filePath) && is_file($filePath)) {
+                                @unlink($filePath);
+                            }
+                        }
+                    }
+                }
+
+                // Delete MtTree records
+                MtTree::where('project_id', $project->id)->delete();
+            }
+
+            // Delete project settings if any
+            ProjectSetting::where('project_id', $project->id)->delete();
+
+            // Delete the project
+            $project->delete();
+        });
+
+        return redirect()->route('project.list')->with('success', 'Project and its associated tree data deleted successfully.');
     }
 
     public function edit($id)
@@ -356,7 +485,16 @@ class HomeController extends Controller
             return redirect()->back()->with('error', 'No tree found for this project.');
         }
 
-        $allTrees = Tree::select('id', 'name')->orderBy('name')->get();
+        $allTrees = Tree::leftJoin('scientific_names', 'trees.id', '=', 'scientific_names.tree_id')
+            ->leftJoin('families', 'trees.id', '=', 'families.tree_id')
+            ->select(
+                'trees.id',
+                'trees.name',
+                'scientific_names.id as related_scientific_id',
+                'families.id as related_family_id'
+            )
+            ->orderBy('trees.name', 'asc')
+            ->get();
         $allScientific = ScientificName::select('id', 'scientific_name')->orderBy('scientific_name')->get();
         $allFamilies = Family::select('id', 'family_name')->orderBy('family_name')->get();
 
@@ -366,8 +504,9 @@ class HomeController extends Controller
 
         $tree->tree_name = $tree->tree->name ?? $tree->tree_name;
         $tree->scientific_name = $tree->scientific->scientific_name ?? $tree->scientific_name;
-        $tree->family = $tree->familyRelation->family_name ?? $tree->family;
-        $tree->all_captured_images = json_decode($tree->all_captured_images, true) ?? [];
+        $tree->all_captured_images = is_array($tree->all_captured_images)
+            ? $tree->all_captured_images
+            : (json_decode($tree->all_captured_images ?? '', true) ?? []);
 
         return view('dashboard.new_tree', compact('page_title', 'tree', 'allTrees', 'allScientific', 'allFamilies'));
     }
@@ -383,23 +522,23 @@ class HomeController extends Controller
         try {
             $tree = MtTree::findOrFail($tree_id);
 
-            if ($request->filled('ward_plot_no')) $tree->ward_plot_no = $request->ward_plot_no;
-            if ($request->filled('tree_no')) $tree->tree_no = $request->tree_no;
-            if ($request->filled('tree_name')) $tree->tree_name = $request->tree_name;
-            if ($request->filled('scientific_name')) $tree->scientific_name = $request->scientific_name;
-            if ($request->filled('family')) $tree->family = $request->family;
-            if ($request->filled('girth')) $tree->girth = $request->girth;
-            if ($request->filled('height')) $tree->height = $request->height;
-            if ($request->filled('canopy')) $tree->canopy = $request->canopy;
-            if ($request->filled('age')) $tree->age = $request->age;
-            if ($request->filled('condition')) $tree->condition = $request->condition;
-            if ($request->filled('address')) $tree->address = $request->address;
-            if ($request->filled('landmark')) $tree->landmark = $request->landmark;
-            if ($request->filled('ownership')) $tree->ownership = $request->ownership;
-            if ($request->filled('concern_person')) $tree->concern_person = $request->concern_person;
-            if ($request->filled('latitude')) $tree->latitude = $request->latitude;
-            if ($request->filled('longitude')) $tree->longitude = $request->longitude;
-            if ($request->filled('remark')) $tree->remark = $request->remark;
+            $tree->ward_plot_no = $request->ward_plot_no;
+            $tree->tree_no = $request->tree_no;
+            $tree->tree_name = $request->tree_name;
+            $tree->scientific_name = $request->scientific_name;
+            $tree->family = $request->family;
+            $tree->girth = $request->girth;
+            $tree->height = $request->height;
+            $tree->canopy = $request->canopy;
+            $tree->age = $request->age;
+            $tree->condition = $request->condition;
+            $tree->address = $request->address;
+            $tree->landmark = $request->landmark;
+            $tree->ownership = $request->ownership;
+            $tree->concern_person = $request->concern_person;
+            $tree->latitude = $request->latitude;
+            $tree->longitude = $request->longitude;
+            $tree->remark = $request->remark;
 
             $existingImages = json_decode($tree->all_captured_images, true) ?? [];
 
@@ -426,7 +565,9 @@ class HomeController extends Controller
                 }
             }
 
-            $tree->all_captured_images = json_encode(array_values($existingImages));
+            $jsonImages = json_encode(array_values($existingImages));
+            $tree->all_captured_images = $jsonImages;
+            $tree->tree_image_upload = $jsonImages;
             $tree->save();
 
             return redirect()->route('tree.list')->with('success', 'Tree updated successfully!');
@@ -719,12 +860,60 @@ class HomeController extends Controller
     {
         DB::transaction(function () use ($id) {
             $tree = Tree::findOrFail($id);
+
+            // 1. Get associated MtTree records (where tree_name = master tree's id)
+            $mtTrees = MtTree::where('tree_name', $tree->id)->get();
+            $mtTreeIds = $mtTrees->pluck('id')->toArray();
+
+            if (!empty($mtTreeIds)) {
+                // Delete UserPaidTree records
+                \App\Models\UserPaidTree::whereIn('mt_tree_id', $mtTreeIds)->delete();
+
+                // Clean UserFreeTree records
+                $freeRecords = \App\Models\UserFreeTree::all();
+                foreach ($freeRecords as $record) {
+                    $currentIds = $record->tree_ids ?? [];
+                    if (!empty($currentIds)) {
+                        $updatedIds = array_values(array_diff($currentIds, $mtTreeIds));
+                        if (count($currentIds) !== count($updatedIds)) {
+                            $record->tree_ids = $updatedIds;
+                            $record->used_count = count($updatedIds);
+                            $record->save();
+                        }
+                    }
+                }
+
+                // Delete physical tree images
+                foreach ($mtTrees as $mtTree) {
+                    $images = [];
+                    if (!empty($mtTree->all_captured_images)) {
+                        $images = is_string($mtTree->all_captured_images)
+                            ? json_decode($mtTree->all_captured_images, true)
+                            : $mtTree->all_captured_images;
+                    }
+                    if (is_array($images)) {
+                        foreach ($images as $img) {
+                            $filePath = public_path($img);
+                            if (file_exists($filePath) && is_file($filePath)) {
+                                @unlink($filePath);
+                            }
+                        }
+                    }
+                }
+
+                // Delete MtTree records
+                MtTree::where('tree_name', $tree->id)->delete();
+            }
+
+            // 2. Delete scientific name and family
             ScientificName::where('tree_id', $tree->id)->delete();
             Family::where('tree_id', $tree->id)->delete();
+
+            // 3. Delete master tree
             $tree->delete();
         });
 
-        return redirect()->route('tree.name.list')->with('success', 'Tree deleted successfully!');
+        return redirect()->route('tree.name.list')->with('success', 'Tree and its associated tree data deleted successfully!');
     }
 
     public function importTrees(Request $request)
