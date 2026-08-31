@@ -18,6 +18,7 @@ use DOMDocument;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
 use ZipArchive;
 
@@ -122,6 +123,14 @@ class ProjectExportController extends Controller
         ];
     }
 
+    private function projectFilename(Project $project, string $extension): string
+    {
+        $projectName = trim(preg_replace('~[<>:"/\\\\|?*\x00-\x1F\x7F]+~', '_', Str::ascii($project->project_name)), ' .');
+        $projectName = $projectName !== '' ? $projectName : "Project_{$project->id}";
+
+        return "{$projectName}.{$extension}";
+    }
+
     /**
      * Download PDF
      */
@@ -143,7 +152,7 @@ class ProjectExportController extends Controller
         $location = ($trees->first()->latitude ?? '').', '.($trees->first()->longitude ?? '');
 
         return Pdf::loadView('exports.project_trees_pdf', compact('project', 'trees', 'projectBy', 'address', 'location'))
-            ->download("Project_{$project_id}_Trees.pdf");
+            ->download($this->projectFilename($project, 'pdf'));
     }
 
     /**
@@ -151,9 +160,10 @@ class ProjectExportController extends Controller
      */
     public function downloadExcel(Request $request, $project_id)
     {
+        $project = Project::findOrFail($project_id);
         $treeIdsArray = $request->has('tree_ids') ? explode(',', $request->tree_ids) : [];
 
-        return Excel::download(new ProjectTreeExport($project_id, $treeIdsArray), "Project_{$project_id}_Trees.xlsx");
+        return Excel::download(new ProjectTreeExport($project_id, $treeIdsArray), $this->projectFilename($project, 'xlsx'));
     }
 
     /**
@@ -161,7 +171,7 @@ class ProjectExportController extends Controller
      */
     public function downloadKml(Request $request, $project_id)
     {
-        $project = Project::find($project_id);
+        $project = Project::findOrFail($project_id);
 
         $query = MtTree::where('project_id', $project_id);
 
@@ -356,7 +366,7 @@ class ProjectExportController extends Controller
             $document->appendChild($placemark);
         }
 
-        $filename = 'Project_' . $project_id . '_Trees.kml';
+        $filename = $this->projectFilename($project, 'kml');
 
         return response()->stream(
             function () use ($dom) {
@@ -376,6 +386,7 @@ class ProjectExportController extends Controller
     public function downloadImgsZip(Request $request, $project_id)
     {
         set_time_limit(0);
+        $project = Project::findOrFail($project_id);
         $query = MtTree::where('project_id', $project_id);
         if ($request->has('tree_ids')) {
             $query->whereIn('id', explode(',', $request->tree_ids));
@@ -386,7 +397,7 @@ class ProjectExportController extends Controller
             return response()->json(['success' => false, 'message' => 'No images found.'], 404);
         }
 
-        $zipFileName = "Tree_Images_project_{$project_id}_".date('d-m-Y_H-i').'.zip';
+        $zipFileName = $this->projectFilename($project, 'zip');
         $zipPath = storage_path("app/public/{$zipFileName}");
         $zip = new ZipArchive;
 

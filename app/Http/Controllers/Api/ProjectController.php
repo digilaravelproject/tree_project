@@ -113,6 +113,7 @@ class ProjectController extends Controller
             return response()->json([
                 'success' => true,
                 'ward_no' => $project->ward_no ?? "",
+                'photo_required' => (bool) $project->photo_required,
                 'requirements' => $requirements
             ]);
         } catch (Exception $e) {

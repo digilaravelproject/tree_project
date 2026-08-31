@@ -108,7 +108,6 @@ Route::get('/export/pdf/{project_id}', [ProjectExportController::class, 'downloa
 Route::get('/export/excel/{project_id}', [ProjectExportController::class, 'downloadExcel'])->name('api.export.excel');
 Route::get('/export/kml/{project_id}', [ProjectExportController::class, 'downloadKml'])->name('api.export.kml');
 Route::get('/export/imgs/{project_id}', [ProjectExportController::class, 'downloadImgsZip'])->name('api.export.imgs');
-
 // ==========================================
 // 6. CUSTOMER ROUTES
 // ==========================================
@@ -125,6 +124,7 @@ Route::group(['prefix' => 'customer'], function () {
         Route::put('/projects/{id}', [CustomerProjectTreeController::class, 'updateProject']);
 
         Route::get('/get-projects', [CustomerProjectTreeController::class, 'getProjects']);
+        Route::post('/check-photo-required', [CustomerProjectTreeController::class, 'checkPhotoRequired']);
         Route::post('/add-tree', [CustomerProjectTreeController::class, 'addTree']);
         Route::get('/get-trees/{project_id}', [CustomerProjectTreeController::class, 'getTrees']);
 

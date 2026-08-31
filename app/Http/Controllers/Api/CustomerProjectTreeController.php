@@ -89,6 +89,7 @@ class CustomerProjectTreeController extends Controller
                 'client_name'  => 'nullable|string|max:255',
                 'company_name'  => 'nullable|string|max:255',
                 'state_id'  => 'required',
+                'photo_required' => 'required|boolean',
             ]);
     
             if ($validator->fails()) {
@@ -110,6 +111,7 @@ class CustomerProjectTreeController extends Controller
                 'field_officer_id' => null,
                 'state_id'         => $request->state_id,
                 'accuracy'         => 0,
+                'photo_required'   => $request->boolean('photo_required'),
             ]);
     
             return response()->json([
@@ -201,6 +203,7 @@ class CustomerProjectTreeController extends Controller
                 'client_name'  => 'nullable|string|max:255',
                 'company_name' => 'nullable|string|max:255',
                 'state_id'     => 'required', // ✅ FIXED
+                'photo_required' => 'sometimes|required|boolean',
             ]);
 
     
@@ -213,12 +216,19 @@ class CustomerProjectTreeController extends Controller
             }
     
             // 🧠 Update Project
-            $project->update([
+            $projectData = [
                 'project_name' => $request->project_name,
                 'client_name'  => $request->client_name,
                 'company_name' => $request->company_name,
                 'state_id'     => $request->state_id,
-            ]);
+            ];
+
+            if ($request->has('photo_required')) {
+                $projectData['photo_required'] = $request->boolean('photo_required');
+            }
+
+            $project->update($projectData);
+            $project->refresh();
     
             return response()->json([
                 'status'  => true,
@@ -248,6 +258,42 @@ class CustomerProjectTreeController extends Controller
                 'message' => 'Something went wrong'
             ], 500);
         }
+    }
+
+    public function checkPhotoRequired(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'project_id' => 'required|integer|exists:projects,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $project = Project::where('id', $request->project_id)
+            ->where('extra_user', auth()->id())
+            ->first();
+
+        if (!$project) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Project not found or access denied',
+            ], 404);
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => $project->photo_required ? 'Photo is required' : 'Photo is not required',
+            'data' => [
+                'project_id' => $project->id,
+                'photo_required' => $project->photo_required,
+                'photo_status' => $project->photo_required ? 'required' : 'not_required',
+            ],
+        ]);
     }
 
 

@@ -18,6 +18,11 @@ class Project extends Model
         'company_name',
         'field_officer_id',
         'ward_no', // ✅ new column added
+        'photo_required',
+    ];
+
+    protected $casts = [
+        'photo_required' => 'boolean',
     ];
 
     public function state()
