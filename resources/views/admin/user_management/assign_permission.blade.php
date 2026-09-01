@@ -64,6 +64,14 @@
                     </div>
 
                                 <div class="col-12 col-md-9">
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input"
+                                               type="checkbox"
+                                               id="all_permissions">
+                                        <label class="form-check-label fw-semibold" for="all_permissions">
+                                            All Permissions
+                                        </label>
+                                    </div>
                                     <div class="tab-content" id="pills-tabContent">
                                         @foreach ($permissions->groupBy(function($item) {
                                             return explode('.', $item->name)[0];
@@ -76,7 +84,7 @@
                                                     @foreach ($group as $perm)
                                                         <div class="col-md-6 mb-2">
                                                             <div class="form-check">
-                                                                <input class="form-check-input"
+                                                                <input class="form-check-input permission-checkbox"
                                                                        type="checkbox"
                                                                        name="permissions[]"
                                                                        id="permission_{{ $perm->id }}"
@@ -123,4 +131,31 @@
     border-color: #7cb342;
 }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const allPermissions = document.getElementById('all_permissions');
+    const permissionCheckboxes = Array.from(document.querySelectorAll('.permission-checkbox'));
+
+    function updateAllPermissionsState() {
+        const checkedCount = permissionCheckboxes.filter(checkbox => checkbox.checked).length;
+
+        allPermissions.checked = permissionCheckboxes.length > 0 && checkedCount === permissionCheckboxes.length;
+        allPermissions.indeterminate = checkedCount > 0 && checkedCount < permissionCheckboxes.length;
+    }
+
+    allPermissions.addEventListener('change', function () {
+        permissionCheckboxes.forEach(checkbox => {
+            checkbox.checked = allPermissions.checked;
+        });
+        allPermissions.indeterminate = false;
+    });
+
+    permissionCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateAllPermissionsState);
+    });
+
+    updateAllPermissionsState();
+});
+</script>
 @endsection

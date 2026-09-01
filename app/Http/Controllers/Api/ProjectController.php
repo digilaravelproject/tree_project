@@ -25,10 +25,13 @@ class ProjectController extends Controller
             $query = Project::with(['state', 'fieldOfficer'])->withCount('trees');
 
             // --- Role based filtering (Same as old logic but cleaner) ---
-            if ($user->role_id == 3) {
+            if ($user->isCustomer()) {
                 $query->where('extra_user', $user->id);
-            } elseif ($user->role_id == 2) {
-                $query->whereRaw("JSON_CONTAINS(field_officer_id, '\"$user->id\"')");
+            } elseif ($user->isOfficer()) {
+                $query->where(function ($assignedQuery) use ($user) {
+                    $assignedQuery->whereJsonContains('field_officer_id', (string) $user->id)
+                        ->orWhereJsonContains('field_officer_id', (int) $user->id);
+                });
             }
             
             $projects = $query->get();
@@ -92,7 +95,7 @@ class ProjectController extends Controller
                 'tree_images' => ['is_required' => false],
             ];
 
-            if ($role_id == 2) {
+            if (\App\Models\User::isOfficerRoleId($role_id)) {
                 $settings = ProjectSetting::where('project_id', $project_id)->get();
                 foreach ($settings as $setting) {
                     if (isset($requirements[$setting->field_key])) {

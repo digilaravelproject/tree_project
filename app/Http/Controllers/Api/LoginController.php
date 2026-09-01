@@ -91,7 +91,7 @@ class LoginController extends Controller
 
             // Verify if existing staff is trying to login via OTP (usually not allowed if they are role 2)
             $userCheck = User::where('email', $email)->first();
-            if ($userCheck && $userCheck->role_id == 2 && $userCheck->status != 1) {
+            if ($userCheck && $userCheck->isOfficer() && $userCheck->status != 1) {
                 return $this->error('Your account is blocked.', 403);
             }
 
@@ -226,28 +226,22 @@ class LoginController extends Controller
      */
     public function project_assign_officer(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'role_id' => 'required',
-            'user_id' => 'required',
-        ]);
-
-        if ($validator->fails()) {
-            return $this->error($validator->errors()->first(), 422);
-        }
-
         try {
-            $user_id = $request->user_id;
-            $role_id = $request->role_id;
-            $projects = collect();
+            /** @var \App\Models\User $user */
+            $user = $request->user();
+            $userId = $user->id;
 
             $query = Project::with(['state', 'fieldOfficer'])->withCount('trees');
 
-            if ($role_id == 3) {
-                $query->where('extra_user', $user_id);
-            } elseif ($role_id == 2) {
-                $query->whereRaw("JSON_CONTAINS(field_officer_id, '\"$user_id\"')");
+            if ($user->isCustomer()) {
+                $query->where('extra_user', $userId);
+            } elseif ($user->isOfficer()) {
+                $query->where(function ($assignedQuery) use ($userId) {
+                    $assignedQuery->whereJsonContains('field_officer_id', (string) $userId)
+                        ->orWhereJsonContains('field_officer_id', (int) $userId);
+                });
             }
-            
+
             $projects = $query->get();
 
             // Fetch active tree price (Old compatibility)

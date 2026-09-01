@@ -123,13 +123,16 @@
                     @endcan
 
                     @can('user_management')
-                        <li class="{{ request()->routeIs('roles.*', 'create.user', 'user.list') ? 'active' : '' }}">
+                        <li class="{{ request()->routeIs('permissions.*', 'roles.*', 'create.user', 'user.list') ? 'active' : '' }}">
                             <a class="" data-bs-toggle="collapse" href="#User" aria-expanded="false">
                                 <i class="ph-duotone ph-user"></i>
                                 User Management
-                                <span class="badge badge-notification ms-2" style="background-color: #7cb342; color: white;">3</span>
+                                <span class="badge badge-notification ms-2" style="background-color: #7cb342; color: white;">4</span>
                             </a>
                             <ul class="collapse" id="User">
+                                <li class="{{ request()->routeIs('permissions.*') ? 'active' : '' }}">
+                                    <a href="{{ route('permissions.index') }}">Permissions</a>
+                                </li>
                                 @can('user_management.role.view')
                                     <li class="{{ request()->routeIs('roles.*') ? 'active' : '' }}">
                                         <a href="{{ route('roles.index') }}">Role</a>

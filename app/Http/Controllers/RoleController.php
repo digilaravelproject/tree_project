@@ -90,14 +90,15 @@ public function Store_Permission(Request $request, $id)
 {
     $request->validate([
         'name' => 'required',
-        'permissions' => 'required|array',
+        'permissions' => 'nullable|array',
+        'permissions.*' => 'integer|exists:permissions,id',
     ]);
 
     $role = Role::findOrFail($id);
     $role->name = $request->input('name');
     $role->save();
 
-    $permissionNames = Permission::whereIn('id', $request->input('permissions'))->pluck('name')->toArray();
+    $permissionNames = Permission::whereIn('id', $request->input('permissions', []))->pluck('name')->toArray();
 
     $role->syncPermissions($permissionNames);
 

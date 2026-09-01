@@ -55,7 +55,31 @@ class User extends Authenticatable
      */
     public function isCustomer()
     {
-        return $this->role_id === 3;
+        return (int) $this->role_id === 3;
+    }
+
+    /**
+     * Resolve the Officer role dynamically because role IDs can differ by database.
+     */
+    public static function officerRoleId(): ?int
+    {
+        $roleId = Role::whereRaw('LOWER(name) = ?', ['officer'])->value('id');
+
+        return $roleId !== null ? (int) $roleId : null;
+    }
+
+    public function isOfficer(): bool
+    {
+        $officerRoleId = static::officerRoleId();
+
+        return $officerRoleId !== null && (int) $this->role_id === $officerRoleId;
+    }
+
+    public static function isOfficerRoleId($roleId): bool
+    {
+        $officerRoleId = static::officerRoleId();
+
+        return $officerRoleId !== null && (int) $roleId === $officerRoleId;
     }
 
     /**

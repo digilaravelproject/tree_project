@@ -323,22 +323,17 @@ class TreeController extends Controller
     public function dashboard_count(Request $request)
     {
         try {
-            $validator = Validator::make($request->all(), [
-                'user_id' => 'required',
-                'role_id' => 'required',
-            ]);
+            /** @var \App\Models\User $user */
+            $user = $request->user();
+            $userId = $user->id;
 
-            if ($validator->fails()) {
-                return response()->json(['status' => false, 'message' => $validator->errors()->first()], 422);
-            }
-
-            $user_id = $request->user_id;
-            $role_id = $request->role_id;
-
-            if ($role_id == 3) {
-                $projectIds = Project::where('extra_user', $user_id)->pluck('id');
-            } elseif ($role_id == 2) {
-                $projectIds = Project::whereRaw("JSON_CONTAINS(field_officer_id, '\"$user_id\"')")->pluck('id');
+            if ($user->isCustomer()) {
+                $projectIds = Project::where('extra_user', $userId)->pluck('id');
+            } elseif ($user->isOfficer()) {
+                $projectIds = Project::where(function ($assignedQuery) use ($userId) {
+                    $assignedQuery->whereJsonContains('field_officer_id', (string) $userId)
+                        ->orWhereJsonContains('field_officer_id', (int) $userId);
+                })->pluck('id');
             } else {
                 return response()->json([
                     'status' => true,

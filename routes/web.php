@@ -5,6 +5,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\PermissionController;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Artisan;
 use App\Http\Controllers\FaqController;
@@ -66,6 +67,13 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/roles', [RoleController::class, 'store'])->name('roles.store');
     Route::put('/roles/{id}', [RoleController::class, 'update'])->name('roles.update');
     Route::get('/roles/delete/{id}', [RoleController::class, 'delete'])->name('roles.delete');
+
+    Route::middleware(['can:user_management'])->group(function () {
+        Route::get('/permissions', [PermissionController::class, 'index'])->name('permissions.index');
+        Route::post('/permissions', [PermissionController::class, 'store'])->name('permissions.store');
+        Route::put('/permissions/{permission}', [PermissionController::class, 'update'])->name('permissions.update');
+        Route::delete('/permissions/{permission}', [PermissionController::class, 'destroy'])->name('permissions.destroy');
+    });
 
 
     Route::middleware(['can:user_management.role.assign.permission'])->group(function () {

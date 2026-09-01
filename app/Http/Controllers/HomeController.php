@@ -235,8 +235,25 @@ class HomeController extends Controller
     {
         $page_title = 'Register New Project';
         $statemaster = StateMaster::all();
-        $officers = User::Where('role_id', 2)->get();
+        $officers = $this->officerUsers();
         return view('dashboard.new_project', compact('page_title', 'statemaster', 'officers'));
+    }
+
+    /**
+     * Get active users assigned to the Officer role without relying on a fixed role ID.
+     */
+    private function officerUsers()
+    {
+        $officerRoleId = User::officerRoleId();
+
+        if (!$officerRoleId) {
+            return User::query()->whereRaw('1 = 0')->get();
+        }
+
+        return User::where('role_id', $officerRoleId)
+            ->where('status', 1)
+            ->orderBy('name')
+            ->get();
     }
 
     public function store(Request $request)
@@ -372,7 +389,7 @@ class HomeController extends Controller
     {
         $project = Project::findOrFail($id);
         $states = StateMaster::all();
-        $officers = User::where('role_id', 2)->get();
+        $officers = $this->officerUsers();
         return view('dashboard.project_edit', compact('project', 'states', 'officers'));
     }
 
